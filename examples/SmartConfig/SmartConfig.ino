@@ -10,6 +10,19 @@ Example shows how to use smart config setting SSID and password.
 
 #include "Spider_L3.h"
 
+// Configure your WiFi module pin connection.
+#if 0
+unsigned char WLAN_CS = 4;
+unsigned char WLAN_EN = 7;
+unsigned char WLAN_IRQ = 2;
+unsigned char WLAN_IRQ_INTNUM = 0;
+#else
+unsigned char WLAN_CS = 24;
+unsigned char WLAN_EN = 25;
+unsigned char WLAN_IRQ = 21;
+unsigned char WLAN_IRQ_INTNUM = 2;
+#endif
+
 const int INDICATE_LED = 13;
 const int SMART_CONFIG_PIN = 8;
 

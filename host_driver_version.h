@@ -3,6 +3,18 @@
 *  host_driver_version.h  - CC3000 Host Driver Implementation.
 *  Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/
 *
+*
+*  This library porting from CC3000 host driver, which works with 
+*  Spider_L3S WiFi module.
+*
+*  Spider_L3S wifi module is developed by Funmaker, we are actively 
+*  involved in Taiwan maker community, and we aims to support makers 
+*  to make more creative projects. 
+*
+*  You can support us, by buying this wifi module, and we are looking
+*  forward to see your awesome projects!
+*
+*
 *  Redistribution and use in source and binary forms, with or without
 *  modification, are permitted provided that the following conditions
 *  are met:

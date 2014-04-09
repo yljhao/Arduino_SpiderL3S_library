@@ -49,7 +49,6 @@
 #include "hci.h"
 #include "evnt_handler.h"
 
-#include "l_debug.h"
 
 #define         READ                                3
 #define         WRITE                               1

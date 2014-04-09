@@ -59,22 +59,30 @@
 #define WEBSERVER_METHOD_POST           2
 
 // how long break receiving loop
-#define WEBSERVER_REQUEST_TIMEOUT       2000
+#define WEBSERVER_REQUEST_TIMEOUT       100
 
 #ifdef  __cplusplus
 extern "C" {
 #endif
 
 extern int WebServer_begin(unsigned short port);
+
 extern int WebServer_close(int server_socket);
 
-
 extern int WebServer_wait_connect(int socket);
+
+extern int WebServer_request_available(int socket);
+
 extern int WebServer_get_request(int socket, char* req_buf, unsigned long buf_len);
-extern int WebServer_process_request(int socket, char* filename, unsigned char name_buf_size, char* CGI_param, unsigned char CGI_buf_size);
+
+extern int WebServer_process_request(int socket, char* method, unsigned char method_size, char* filename, unsigned char filename_size, char* content, unsigned char content_size);
+
 extern int WebServer_put_response(int socket, char* resp_buf, unsigned long buf_len);
+
 extern int WebServer_put_badrequest(int socket);
+
 extern int WebServer_put_notfound(int socket);
+
 extern int WebServer_close_connect(int socket);
 
 

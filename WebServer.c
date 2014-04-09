@@ -93,7 +93,7 @@ int WebServer_wait_connect(int socket){
         return -1;
     }
 
-    long timeout = 100;
+    long timeout = 10;
     Connect_stat = setsockopt(client_sock, SOL_SOCKET, SOCKOPT_RECV_TIMEOUT, &timeout, sizeof(timeout));
     if(Connect_stat < 0){
         closesocket(client_sock);
@@ -107,14 +107,29 @@ int WebServer_wait_connect(int socket){
 int WebServer_request_available(int socket){
     timeval timeout;
     fd_set fd_read;
+    int retval = 0;
 
-    memset(&fd_read, 0, sizeof(fd_read));
+    FD_ZERO(&fd_read);
     FD_SET(socket, &fd_read);
 
     timeout.tv_sec = 0;
     timeout.tv_usec = 5000; // 5 millisec
 
-    return select(socket, &fd_read, NULL, NULL, &timeout);
+    retval = select((socket + 1), &fd_read, NULL, NULL, &timeout);
+
+    if(retval < 0){
+        return -1;
+    }
+    else if(retval == 0){
+        return -2;
+    }
+    else{
+        if(FD_ISSET(socket, &fd_read)){
+            return 0;
+        }
+    }
+
+    return -1;
 }
 
 int WebServer_get_request(int socket, char* req_buf, unsigned long buf_len){
@@ -129,217 +144,93 @@ int WebServer_get_request(int socket, char* req_buf, unsigned long buf_len){
     return Connect_stat;
 }
 
-PROGMEM const char GET_Str[] =  "GET ";
-PROGMEM const char POST_Str[] = "POST ";
+int WebServer_process_request(int socket, char* method, unsigned char method_size, char* filename, unsigned char filename_size, char* content, unsigned char content_size){
 
-
-#if 1
-int WebServer_process_request(int socket, char* filename, unsigned char name_buf_size, char* CGI_param, unsigned char CGI_buf_size){
+    #define STATE_GET_METHOD    0
+    #define STATE_GET_FILENAME  1
+    #define STATE_GET_CONTENT   2
 
     unsigned long tmr = 0;
+    char data = 0;
+    char content_head[4];
+    unsigned char state = 0;
+
     char data_pool[100];
     int ret = 0;
-
-    int get_method = -1;
+    int i;
 
     char* str1 = 0;
-    char* str2 = 0;
-    unsigned long cal_1 = 0;
 
-    // Pre-load http request from Spider L3
-    memset(data_pool, 0, sizeof(data_pool));
+    unsigned char method_ptr = 0;
+    unsigned char filename_ptr = 0;
+    unsigned char content_ptr = 0;
+
+    memset(content_head, 0, sizeof(content_head));
+
+
     tmr = millis() + WEBSERVER_REQUEST_TIMEOUT;
-    ret = 0;
+
     while(millis() < tmr){
-        ret = WebServer_get_request(socket, data_pool, sizeof(data_pool));
-        if(ret >= 0) break;
-        if(ret < 0) return WEBSERVER_FAIL;
-    }
-
-    while(1){
-        // Find method
-        str1 = strstr_P(data_pool, GET_Str);
-        if(str1 != 0){
-            get_method = WEBSERVER_METHOD_GET;
-            str1 += 4;
-            break;
-        }
-        else{
-            str1 = strstr_P(data_pool, POST_Str);
-            if(str1 != 0){
-                get_method = WEBSERVER_METHOD_POST;
-                str1 += 5;
-                break;
-            }
-            else{
-                // Do Streaming read.
-                memset(data_pool, 0, sizeof(data_pool));
+        //if(WebServer_request_available(socket) == 0){
+            // Get char
+            //WebServer_get_request(socket, &data, 1);
+            ret = WebServer_get_request(socket, data_pool, sizeof(data_pool));
+            if(ret > 0){
                 tmr = millis() + WEBSERVER_REQUEST_TIMEOUT;
-                ret = 0;
-                while(millis() < tmr){
-                    ret = WebServer_get_request(socket, data_pool, sizeof(data_pool));
-                    if(ret >= 0) break;
-                    if(ret < 0) return WEBSERVER_FAIL;
+                for(i = 0; i < ret; i++){
+                    data = data_pool[i];
+
+                    // Check state
+                    switch(state){
+
+                        case STATE_GET_METHOD:
+                            if(data != ' '){
+                                if(method_ptr < method_size){
+                                    method[method_ptr] = data;
+                                    method_ptr++;
+                                }
+                            }
+                            else{
+                                // Get blank
+                                state = STATE_GET_FILENAME;
+                            }
+                        break;
+
+                        case STATE_GET_FILENAME:
+                            if(data != ' '){
+                                if(filename_ptr < filename_size){
+                                    filename[filename_ptr] = data;
+                                    filename_ptr++;
+                                }
+                            }
+                            else{
+                                // Get blank, change state
+                                state = STATE_GET_CONTENT;
+                            }
+                        break;
+
+                        case STATE_GET_CONTENT:
+                            if((content_head[0] == '\r') && (content_head[1] == '\n') && (content_head[2] == '\r') && (content_head[3] == '\n')){
+                                if(content_ptr < content_size){
+                                    content[content_ptr] = data;
+                                    content_ptr++;
+                                }
+                            }else{
+                                memcpy(content_head, &content_head[1], (sizeof(content_head) - 1));
+                                content_head[3] = data;
+                            }
+                        break;
+
+                        default:
+                        break;
+                    }
+
                 }
-
-                // Cannot get file name
-                if(ret == 0) return get_method;
-
-                str1 = data_pool;
             }
-            /*
-            else{
-                //Unsupported method, read rest data...
-                tmr = millis() + WEBSERVER_REQUEST_TIMEOUT;
-                ret = 0;
-                while(millis() < tmr){
-                    ret = WebServer_get_request(socket, data_pool, sizeof(data_pool));
-                    if(ret < 0) return WEBSERVER_FAIL;
-                }
-                return WEBSERVER_FAIL;
-            }
-            */
-
-        }
+        //}
     }
-
-    // Get filename
-    str2 = data_pool + sizeof(data_pool); // Limit of pool
-    cal_1 = 0;
-    while(1){
-        if(str1 < str2){
-            // Check stop char space or CGI char ?
-            if(((*str1 == ' ') || (*str1 == '?')) && (cal_1 < name_buf_size)){
-                break;
-            }
-            else{
-                filename[cal_1] = *str1;
-                str1++;
-                cal_1++;
-            }
-        }
-        else{
-            // Do Streaming read.
-            memset(data_pool, 0, sizeof(data_pool));
-            tmr = millis() + WEBSERVER_REQUEST_TIMEOUT;
-            ret = 0;
-            while(millis() < tmr){
-                ret = WebServer_get_request(socket, data_pool, sizeof(data_pool));
-                if(ret >= 0) break;
-                if(ret < 0) return WEBSERVER_FAIL;
-            }
-
-            // Cannot get file name
-            if(ret == 0) return get_method;
-
-            str1 = data_pool;
-        }
-    }
-
-    // Find CGI parameter start position
-    str2 = data_pool + sizeof(data_pool); // Limit of pool
-    if(get_method == WEBSERVER_METHOD_GET){
-        while(1){
-            if(str1 < str2){
-                if(*str1 == '?'){
-                    str1 += 1;
-                    break;
-                }
-                else{
-                    str1++;
-                }
-            }
-            else{
-                // Do Streaming read.
-                memset(data_pool, 0, sizeof(data_pool));
-                tmr = millis() + WEBSERVER_REQUEST_TIMEOUT;
-                ret = 0;
-                while(millis() < tmr){
-                    ret = WebServer_get_request(socket, data_pool, sizeof(data_pool));
-                    if(ret > 0) break;
-                    if(ret < 0) return WEBSERVER_FAIL;
-                }
-                // Cannot get CGI parameter start position
-                if(ret == 0) return get_method;
-
-                str1 = data_pool;
-            }
-        }
-    }
-    else if(get_method == WEBSERVER_METHOD_POST){
-        while(1){
-            if(str1 < (str2 - 4)){
-                if((str1[0] == '\r') && (str1[1] == '\n') && (str1[2] == '\r') && (str1[3] == '\n')){
-                    str1 += 4;
-                    break;
-                }
-                else{
-                    str1++;
-                }
-            }
-            else{
-                // Do Streaming read.
-                strncpy(data_pool, str1, 4);
-                memset(&data_pool[4], 0, (sizeof(data_pool) - 4));
-                tmr = millis() + WEBSERVER_REQUEST_TIMEOUT;
-
-                ret = 0;
-                while(millis() < tmr){
-                    ret = WebServer_get_request(socket, &data_pool[4], (sizeof(data_pool) - 4));
-                    if(ret > 0) break;
-                    if(ret < 0) return WEBSERVER_FAIL;
-                }
-
-                // Cannot get CGI parameter start position
-                if(ret == 0) return get_method;
-
-                str1 = data_pool + 1;
-            }
-        }
-    }
-
-    // Get CGI parameter
-    str2 = data_pool + sizeof(data_pool); // Limit of pool
-    cal_1 = 0;
-    while(1){
-        if(str1 < str2){
-            if((*str1 != 0) && (*str1 != ' ') && (cal_1 < CGI_buf_size)){
-                CGI_param[cal_1] = *str1;
-                str1++;
-                cal_1++;
-            }
-            else{
-                break;
-            }
-        }
-        else{
-            // Do Streaming read.
-            memset(data_pool, 0, sizeof(data_pool));
-            tmr = millis() + WEBSERVER_REQUEST_TIMEOUT;
-            ret = 0;
-            while(millis() < tmr){
-                ret = WebServer_get_request(socket, data_pool, sizeof(data_pool));
-                if(ret > 0) break;
-                if(ret < 0) return WEBSERVER_FAIL;
-            }
-
-            // Cannot get CGI parameter
-            if(ret == 0) return get_method;
-
-            str1 = data_pool;
-        }
-    }
-
-    // Read rest data...
-    tmr = millis() + WEBSERVER_REQUEST_TIMEOUT;
-    ret = 0;
-    while(millis() < tmr){
-        ret = WebServer_get_request(socket, data_pool, sizeof(data_pool));
-        if(ret <= 0) break;
-    }
-    return get_method;
 }
-#endif
+
 int WebServer_put_response(int socket, char* resp_buf, unsigned long buf_len){
 
     int             Connect_stat = -1;

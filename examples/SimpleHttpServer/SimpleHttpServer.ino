@@ -142,10 +142,8 @@ void setup() {
 #define INIT_SERVER             0x01
 #define WAIT_CONNECT            0x02
 #define HANDLE_REQUEST          0x03
-#define HANDLE_GET_RESPONSE     0x04
-#define HANDLE_POST_RESPONSE    0x05
-#define HANDLE_BAD_RESPONSE     0x06
-#define CLOSE_CLIENT_CONN       0x07
+#define HANDLE_RESPONSE         0x04
+#define CLOSE_CLIENT_CONN       0x05
 
 
 void WebService(void){
@@ -157,9 +155,9 @@ void WebService(void){
     char data_pool[100];
     int ret = 0;
 
-    char Method[5];
+    char method[10];
     char file[30];
-    char CGI_Param[15];
+    char content[100];
 
     if(millis() > task_timer){
         switch(app_st){
@@ -179,93 +177,95 @@ void WebService(void){
             case HANDLE_REQUEST:
                 Serial.println(F("Handle incomming request."));
 
-                memset(Method, 0, sizeof(Method));
+                memset(method, 0, sizeof(method));
                 memset(file, 0, sizeof(file));
-                memset(CGI_Param, 0, sizeof(CGI_Param));
+                memset(content, 0, sizeof(content));
 
-                ret = WebServer_process_request(client_socket, file, sizeof(file), CGI_Param, sizeof(CGI_Param));
+                WebServer_process_request(client_socket, method, sizeof(method), file, sizeof(file), content, sizeof(content));
 
-                Serial.println(ret, DEC);
-                Serial.print(F("filename : "));
+                Serial.print(F("method:"));
+                Serial.write((unsigned char*)method, strlen(method));
+                Serial.println();
+                Serial.print(F("filename:"));
                 Serial.write((unsigned char*)file, strlen(file));
                 Serial.println();
-                Serial.print(F("CGI parameter : "));
-                Serial.write((unsigned char*)CGI_Param, strlen(CGI_Param));
+                Serial.print(F("Content:"));
+                Serial.write((unsigned char*)content, strlen(content));
                 Serial.println();
-                app_st = HANDLE_GET_RESPONSE;
+                app_st = HANDLE_RESPONSE;
                 break;
 
-            case HANDLE_GET_RESPONSE:
-            case HANDLE_POST_RESPONSE:
+            case HANDLE_RESPONSE:
 
+                if(strstr_P(method, PSTR("POST")) != 0){
+                    if(strstr_P(content, PSTR("HIGH")) != 0){
+                        CONTROL_STATE = HIGH;
+                    }
+
+                    if(strstr_P(content, PSTR("LOW")) != 0){
+                        CONTROL_STATE = LOW;
+                    }
+                }
+                
                 if(strstr_P(file, PSTR("favicon")) != 0){
                     WebServer_put_notfound(client_socket);
-                    task_timer = millis() + 1000;
                     app_st = CLOSE_CLIENT_CONN;
                     break;
                 }
 
-                if(strstr_P(CGI_Param, PSTR("HIGH")) != 0){
-                    CONTROL_STATE = HIGH;
+                if((strstr_P(file, PSTR("/")) != 0) || (strstr_P(file, PSTR("index.html")) != 0)){
+                    /* Put HTML header */
+                    memset(data_pool, 0, sizeof(data_pool));
+                    strncpy_P(data_pool, PSTR("HTTP/1.1 200 OK\r\n"), sizeof(data_pool));
+                    WebServer_put_response(client_socket, data_pool, strlen(data_pool));
+
+                    memset(data_pool, 0, sizeof(data_pool));
+                    strncpy_P(data_pool, PSTR("Content-Type: text/html\r\n"), sizeof(data_pool));
+                    WebServer_put_response(client_socket, data_pool, strlen(data_pool));
+
+                    memset(data_pool, 0, sizeof(data_pool));
+                    strncpy_P(data_pool, PSTR("Connection: close\r\n\r\n"), sizeof(data_pool));
+                    WebServer_put_response(client_socket, data_pool, strlen(data_pool));
+
+                    /* PUT Message */
+                    memset(data_pool, 0, sizeof(data_pool));
+                    strncpy_P(data_pool, PSTR("<html>\r\n<body>\r\n\r\n"), sizeof(data_pool));
+                    WebServer_put_response(client_socket, data_pool, strlen(data_pool));
+
+                    ret = snprintf(data_pool, sizeof(data_pool), "Input variable :%s\r\n", ((CONTROL_STATE == HIGH) ? "HIGH" : "LOW"));
+                    WebServer_put_response(client_socket, data_pool, ret);
+
+                    memset(data_pool, 0, sizeof(data_pool));
+                    strncpy_P(data_pool, PSTR("<form method=\"post\">"), sizeof(data_pool));
+                    WebServer_put_response(client_socket, data_pool, strlen(data_pool));
+
+                    memset(data_pool, 0, sizeof(data_pool));
+                    strncpy_P(data_pool, PSTR("<input type=\"hidden\" name=\"var\" value=\"HIGH\">"), sizeof(data_pool));
+                    WebServer_put_response(client_socket, data_pool, strlen(data_pool));
+
+                    memset(data_pool, 0, sizeof(data_pool));
+                    strncpy_P(data_pool, PSTR("<input type=\"submit\" style=\"height:30px; width:100px\" value=\"HIGH\">\r\n</form>\r\n"), sizeof(data_pool));
+                    WebServer_put_response(client_socket, data_pool, strlen(data_pool));
+
+                    memset(data_pool, 0, sizeof(data_pool));
+                    strncpy_P(data_pool, PSTR("<form method=\"post\">"), sizeof(data_pool));
+                    WebServer_put_response(client_socket, data_pool, strlen(data_pool));
+
+                    memset(data_pool, 0, sizeof(data_pool));
+                    strncpy_P(data_pool, PSTR("<input type=\"hidden\" name=\"var\" value=\"LOW\">"), sizeof(data_pool));
+                    WebServer_put_response(client_socket, data_pool, strlen(data_pool));
+
+                    memset(data_pool, 0, sizeof(data_pool));
+                    strncpy_P(data_pool, PSTR("<input type=\"submit\" style=\"height:30px; width:100px\" value=\"LOW\">\r\n</form>\r\n"), sizeof(data_pool));
+                    WebServer_put_response(client_socket, data_pool, strlen(data_pool));
+
+                    memset(data_pool, 0, sizeof(data_pool));
+                    strncpy_P(data_pool, PSTR("</html>\r\n</body>\r\n\r\n"), sizeof(data_pool));
+                    WebServer_put_response(client_socket, data_pool, strlen(data_pool));
+
                 }
 
-                if(strstr_P(CGI_Param, PSTR("LOW")) != 0){
-                    CONTROL_STATE = LOW;
-                }
-                digitalWrite(INDICATE_LED, CONTROL_STATE);
-
-                Serial.println(F("Acknowledge webpage."));
-
-                /* Put HTML header */
-                memset(data_pool, 0, sizeof(data_pool));
-                strncpy_P(data_pool, PSTR("HTTP/1.1 200 OK\r\n"), sizeof(data_pool));
-                WebServer_put_response(client_socket, data_pool, strlen(data_pool));
-
-                memset(data_pool, 0, sizeof(data_pool));
-                strncpy_P(data_pool, PSTR("Content-Type: text/html\r\n"), sizeof(data_pool));
-                WebServer_put_response(client_socket, data_pool, strlen(data_pool));
-
-                memset(data_pool, 0, sizeof(data_pool));
-                strncpy_P(data_pool, PSTR("Connection: close\r\n\r\n"), sizeof(data_pool));
-                WebServer_put_response(client_socket, data_pool, strlen(data_pool));
-
-                /* PUT Message */
-                memset(data_pool, 0, sizeof(data_pool));
-                strncpy_P(data_pool, PSTR("<html>\r\n<body>\r\n\r\n"), sizeof(data_pool));
-                WebServer_put_response(client_socket, data_pool, strlen(data_pool));
-
-                ret = snprintf(data_pool, sizeof(data_pool), "Input variable :%s\r\n", ((CONTROL_STATE == HIGH) ? "HIGH" : "LOW"));
-                WebServer_put_response(client_socket, data_pool, ret);
-
-                memset(data_pool, 0, sizeof(data_pool));
-                strncpy_P(data_pool, PSTR("<form method=\"post\">"), sizeof(data_pool));
-                WebServer_put_response(client_socket, data_pool, strlen(data_pool));
-
-                memset(data_pool, 0, sizeof(data_pool));
-                strncpy_P(data_pool, PSTR("<input type=\"hidden\" name=\"var\" value=\"HIGH\">"), sizeof(data_pool));
-                WebServer_put_response(client_socket, data_pool, strlen(data_pool));
-
-                memset(data_pool, 0, sizeof(data_pool));
-                strncpy_P(data_pool, PSTR("<input type=\"submit\" style=\"height:30px; width:100px\" value=\"HIGH\">\r\n</form>\r\n"), sizeof(data_pool));
-                WebServer_put_response(client_socket, data_pool, strlen(data_pool));
-
-                memset(data_pool, 0, sizeof(data_pool));
-                strncpy_P(data_pool, PSTR("<form method=\"post\">"), sizeof(data_pool));
-                WebServer_put_response(client_socket, data_pool, strlen(data_pool));
-
-                memset(data_pool, 0, sizeof(data_pool));
-                strncpy_P(data_pool, PSTR("<input type=\"hidden\" name=\"var\" value=\"LOW\">"), sizeof(data_pool));
-                WebServer_put_response(client_socket, data_pool, strlen(data_pool));
-
-                memset(data_pool, 0, sizeof(data_pool));
-                strncpy_P(data_pool, PSTR("<input type=\"submit\" style=\"height:30px; width:100px\" value=\"LOW\">\r\n</form>\r\n"), sizeof(data_pool));
-                WebServer_put_response(client_socket, data_pool, strlen(data_pool));
-
-                memset(data_pool, 0, sizeof(data_pool));
-                strncpy_P(data_pool, PSTR("</html>\r\n</body>\r\n\r\n"), sizeof(data_pool));
-                WebServer_put_response(client_socket, data_pool, strlen(data_pool));
-
-                task_timer = millis() + 1000;
+                task_timer = millis() + 250;
                 app_st = CLOSE_CLIENT_CONN;
             break;
 
@@ -277,7 +277,6 @@ void WebService(void){
             break;
 
         }
-        task_timer = millis() + 100;
     }
 }
 

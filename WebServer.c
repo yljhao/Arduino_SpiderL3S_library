@@ -159,8 +159,6 @@ int WebServer_process_request(int socket, char* method, unsigned char method_siz
     int ret = 0;
     int i;
 
-    char* str1 = 0;
-
     unsigned char method_ptr = 0;
     unsigned char filename_ptr = 0;
     unsigned char content_ptr = 0;
@@ -229,6 +227,7 @@ int WebServer_process_request(int socket, char* method, unsigned char method_siz
             }
         //}
     }
+    return 0;
 }
 
 int WebServer_put_response(int socket, char* resp_buf, unsigned long buf_len){

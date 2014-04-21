@@ -76,25 +76,25 @@ int WebClient_Begin_URL(Host_Info *info, char* url_link){
 
     sp1 = strstr(url_link, "http://");
     if(sp1 == 0){
-        return HOST_STR_FAIL;
+        return WEB_CLI_HOST_STR_FAIL;
     }
     sp1 += strlen("http://");
     sp2 = strstr(sp1, "/");
     if(sp2 == 0){
-        return HOST_STR_FAIL;
+        return WEB_CLI_HOST_STR_FAIL;
     }
 
     // Get host IP from host name.
     Connect_stat = gethostbyname(sp1, (sp2-sp1), &(tar_ip.ulip));
     if(Connect_stat < 0){
-        return HOST_IP_FAIL;
+        return WEB_CLI_HOST_IP_FAIL;
     }
 
     // Get socket from spider L3.
     info->host_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if(info->host_socket < 0){
         info->host_socket = 0xFFFFFFFF;
-        return GET_SOCKET_FAIL;
+        return WEB_CLI_GET_SOCKET_FAIL;
     }
 
     // Setting BSD socket timeout.
@@ -103,7 +103,7 @@ int WebClient_Begin_URL(Host_Info *info, char* url_link){
     if(Connect_stat < 0){
         closesocket(info->host_socket);
         info->host_socket = 0xFFFFFFFF;
-        return SET_SOCKET_TO_FAIL;
+        return WEB_CLI_SET_SOCKET_TO_FAIL;
     }
 
     // Setting BSD like socket setting.
@@ -118,7 +118,7 @@ int WebClient_Begin_URL(Host_Info *info, char* url_link){
     info->host_addr.sa_data[4] = tar_ip.ucip[1];
     info->host_addr.sa_data[5] = tar_ip.ucip[0];
 
-    return OK;
+    return WEB_CLI_OK;
 }
 
 int WebClient_Get_HostIP(char* url_link, unsigned char* ret_IP0, unsigned char* ret_IP1, unsigned char* ret_IP2, unsigned char* ret_IP3){
@@ -133,18 +133,18 @@ int WebClient_Get_HostIP(char* url_link, unsigned char* ret_IP0, unsigned char* 
 
     sp1 = strstr(url_link, "http://");
     if(sp1 == 0){
-        return HOST_STR_FAIL;
+        return WEB_CLI_HOST_STR_FAIL;
     }
     sp1 += strlen("http://");
     sp2 = strstr(sp1, "/");
     if(sp2 == 0){
-        return HOST_STR_FAIL;
+        return WEB_CLI_HOST_STR_FAIL;
     }
 
     // Get host IP from host name.
     Connect_stat = gethostbyname(sp1, (sp2-sp1), &(tar_ip.ulip));
     if(Connect_stat < 0){
-        return HOST_IP_FAIL;
+        return WEB_CLI_HOST_IP_FAIL;
     }
 
     *ret_IP0 = tar_ip.ucip[3];
@@ -152,7 +152,7 @@ int WebClient_Get_HostIP(char* url_link, unsigned char* ret_IP0, unsigned char* 
     *ret_IP2 = tar_ip.ucip[1];
     *ret_IP3 = tar_ip.ucip[0];
 
-    return OK;
+    return WEB_CLI_OK;
 }
 
 int WebClient_Begin_IP(Host_Info *info, unsigned char ip1, unsigned char ip2, unsigned char ip3, unsigned char ip4, unsigned short port){
@@ -171,7 +171,7 @@ int WebClient_Begin_IP(Host_Info *info, unsigned char ip1, unsigned char ip2, un
     info->host_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if(info->host_socket < 0){
         info->host_socket = 0xFFFFFFFF;
-        return GET_SOCKET_FAIL;
+        return WEB_CLI_GET_SOCKET_FAIL;
     }
 
 
@@ -181,7 +181,7 @@ int WebClient_Begin_IP(Host_Info *info, unsigned char ip1, unsigned char ip2, un
     if(Connect_stat < 0){
         closesocket(info->host_socket);
         info->host_socket = 0xFFFFFFFF;
-        return SET_SOCKET_TO_FAIL;
+        return WEB_CLI_SET_SOCKET_TO_FAIL;
     }
 
     // Setting BSD like socket setting.
@@ -196,7 +196,7 @@ int WebClient_Begin_IP(Host_Info *info, unsigned char ip1, unsigned char ip2, un
     info->host_addr.sa_data[4] = ip3;
     info->host_addr.sa_data[5] = ip4;
 
-    return OK;
+    return WEB_CLI_OK;
 }
 
 int WebClient_Connect(Host_Info *info){
@@ -204,7 +204,7 @@ int WebClient_Connect(Host_Info *info){
     // Connect to host server.
     Connect_stat = connect(info->host_socket, &info->host_addr, sizeof(sockaddr));
     if(Connect_stat < 0){
-        return WEB_SERVER_CONN_FAIL;
+        return WEB_CLI_SERVER_CONN_FAIL;
     }
     return Connect_stat;
 }
@@ -217,38 +217,38 @@ int WebClient_SendRequest(Host_Info *info, char* url_link){
 
     sp1 = strstr(url_link, "http://");
     if(sp1 == 0){
-        return HOST_STR_FAIL;
+        return WEB_CLI_HOST_STR_FAIL;
     }
     sp1 += strlen("http://");
     sp2 = strstr(sp1, "/");
     if(sp2 == 0){
-        return HOST_STR_FAIL;
+        return WEB_CLI_HOST_STR_FAIL;
     }
 
     // Send http get.
     Connect_stat = send(info->host_socket, WebGet_MsgFnt, strlen(WebGet_MsgFnt), 0);
     if(Connect_stat < 0){
-        return WEB_SERVER_SEND_FAIL;
+        return WEB_CLI_SERVER_SEND_FAIL;
     }
 
     Connect_stat = send(info->host_socket, sp2, strlen(sp2), 0);
     if(Connect_stat < 0){
-        return WEB_SERVER_SEND_FAIL;
+        return WEB_CLI_SERVER_SEND_FAIL;
     }
 
     Connect_stat = send(info->host_socket, WebGet_MsgMid, strlen(WebGet_MsgMid), 0);
     if(Connect_stat < 0){
-        return WEB_SERVER_SEND_FAIL;
+        return WEB_CLI_SERVER_SEND_FAIL;
     }
 
     Connect_stat = send(info->host_socket, sp1, (sp2-sp1), 0);
     if(Connect_stat < 0){
-        return WEB_SERVER_SEND_FAIL;
+        return WEB_CLI_SERVER_SEND_FAIL;
     }
 
     Connect_stat = send(info->host_socket, WebGet_MsgEnd, strlen(WebGet_MsgEnd), 0);
     if(Connect_stat < 0){
-        return WEB_SERVER_SEND_FAIL;
+        return WEB_CLI_SERVER_SEND_FAIL;
     }
     return 0;
 }
@@ -271,7 +271,7 @@ int WebClient_RecvData(Host_Info *info, char* ret_buf, int buf_size){
     // Receiving http get result from host server.
     Connect_stat = recv(info->host_socket, ret_buf, buf_size, 0);
     if(Connect_stat < 0){
-        return WEB_SERVER_RECV_FAIL;
+        return WEB_CLI_SERVER_RECV_FAIL;
     }
 
     return Connect_stat;
@@ -286,12 +286,12 @@ int WebClient_Get(Host_Info *info, char* url_link, char* ret_buf, int buf_size){
     // Copy host name from url.
     sp1 = strstr(url_link, "http://");
     if(sp1 == 0){
-        return HOST_STR_FAIL;
+        return WEB_CLI_HOST_STR_FAIL;
     }
     sp1 += strlen("http://");
     sp2 = strstr(sp1, "/");
     if(sp2 == 0){
-        return HOST_STR_FAIL;
+        return WEB_CLI_HOST_STR_FAIL;
     }
 
     char send_buffer[500];
@@ -318,13 +318,13 @@ int WebClient_Get(Host_Info *info, char* url_link, char* ret_buf, int buf_size){
     // Send end of http get.
     Connect_stat = send(info->host_socket, send_buffer, ptr, 0);
     if(Connect_stat < 0){
-        return WEB_SERVER_SEND_FAIL;
+        return WEB_CLI_SERVER_SEND_FAIL;
     }
 
     // Receiving http get result from host server.
     Connect_stat = recv(info->host_socket, ret_buf, buf_size, 0);
     if(Connect_stat < 0){
-        return WEB_SERVER_RECV_FAIL;
+        return WEB_CLI_SERVER_RECV_FAIL;
     }
 
     return Connect_stat;
@@ -335,7 +335,7 @@ int WebClient_Close(Host_Info *info){
 
     Connect_stat = closesocket(info->host_socket);
     if(Connect_stat != 0){
-        return ERROR;
+        return WEB_CLI_ERROR;
     }
-    return OK;
+    return WEB_CLI_OK;
 }

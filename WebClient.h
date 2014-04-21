@@ -56,33 +56,32 @@
 //
 // Web server port
 //
-#define DEFAULT_WEB_PORT	80
+#define DEFAULT_WEB_PORT    80
 
 //
 // Web server reciving timeout
 //
-#define WEB_CLIENT_RECV_TO	2000
+#define WEB_CLIENT_RECV_TO    2000
 
 //
 // Web client debug print
 //
-#define WEB_CLIENT_DBG_EN	0
+#define WEB_CLIENT_DBG_EN    0
 
-enum{
-	OK 						=  0,
-	ERROR 					= -1,
-	HOST_STR_FAIL 			= -2,
-	HOST_IP_FAIL 			= -3,
-	GET_SOCKET_FAIL 		= -4,
-	SET_SOCKET_TO_FAIL		= -5,
-	WEB_SERVER_CONN_FAIL 	= -6,
-	WEB_SERVER_SEND_FAIL	= -7,
-	WEB_SERVER_RECV_FAIL	= -8
-};
+#define WEB_CLI_OK                  0
+#define WEB_CLI_ERROR               -1
+#define WEB_CLI_HOST_STR_FAIL       -2
+#define WEB_CLI_HOST_IP_FAIL        -3
+#define WEB_CLI_GET_SOCKET_FAIL     -4
+#define WEB_CLI_SET_SOCKET_TO_FAIL  -5
+#define WEB_CLI_SERVER_CONN_FAIL    -6
+#define WEB_CLI_SERVER_SEND_FAIL    -7
+#define WEB_CLI_SERVER_RECV_FAIL    -8
+
 
 typedef struct{
-	long		host_socket;
-	sockaddr	host_addr;
+    long        host_socket;
+    sockaddr    host_addr;
 }Host_Info;
 
 #ifdef  __cplusplus

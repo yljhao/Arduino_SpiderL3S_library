@@ -3,18 +3,6 @@
 *  security.h  - CC3000 Host Driver Implementation.
 *  Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/
 *
-*
-*  This library porting from CC3000 host driver, which works with 
-*  Spider_L3S WiFi module.
-*
-*  Spider_L3S wifi module is developed by Funmaker, we are actively 
-*  involved in Taiwan maker community, and we aims to support makers 
-*  to make more creative projects. 
-*
-*  You can support us, by buying this wifi module, and we are looking
-*  forward to see your awesome projects!
-*
-*
 *  Redistribution and use in source and binary forms, with or without
 *  modification, are permitted provided that the following conditions
 *  are met:
@@ -81,7 +69,7 @@ extern "C" {
 //!	 
 //!
 //*****************************************************************************
-extern void aes_encrypt(unsigned char *state, unsigned char *key);
+extern void aes_encrypt(UINT8 *state, UINT8 *key);
 
 //*****************************************************************************
 //
@@ -99,7 +87,7 @@ extern void aes_encrypt(unsigned char *state, unsigned char *key);
 //!	 
 //!
 //*****************************************************************************
-extern void aes_decrypt(unsigned char *state, unsigned char *key);
+extern void aes_decrypt(UINT8 *state, UINT8 *key);
 
 
 //*****************************************************************************
@@ -116,7 +104,7 @@ extern void aes_decrypt(unsigned char *state, unsigned char *key);
 //!	 
 //!
 //*****************************************************************************
-extern signed long aes_read_key(unsigned char *key);
+extern INT32 aes_read_key(UINT8 *key);
 
 //*****************************************************************************
 //
@@ -131,12 +119,12 @@ extern signed long aes_read_key(unsigned char *key);
 //!	 
 //!
 //*****************************************************************************
-extern signed long aes_write_key(unsigned char *key);
+extern INT32 aes_write_key(UINT8 *key);
 
 #endif //CC3000_UNENCRYPTED_SMART_CONFIG
 
-#ifdef	__cplusplus
-} // Add to avoide error when using cpp compiler.
-#endif
+#ifdef  __cplusplus
+}
+#endif // __cplusplus
 
 #endif

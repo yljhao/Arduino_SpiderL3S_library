@@ -3,18 +3,6 @@
 *  nvmem.h  - CC3000 Host Driver Implementation.
 *  Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/
 *
-*
-*  This library porting from CC3000 host driver, which works with 
-*  Spider_L3S WiFi module.
-*
-*  Spider_L3S wifi module is developed by Funmaker, we are actively 
-*  involved in Taiwan maker community, and we aims to support makers 
-*  to make more creative projects. 
-*
-*  You can support us, by buying this wifi module, and we are looking
-*  forward to see your awesome projects!
-*
-*
 *  Redistribution and use in source and binary forms, with or without
 *  modification, are permitted provided that the following conditions
 *  are met:
@@ -111,7 +99,7 @@ extern "C" {
 //!  @param  ulOffset    ulOffset in file from where to read  
 //!  @param  buff        output buffer pointer
 //!
-//!  @return       number of bytes read, otherwise error.
+//!  @return       on success 0, error otherwise.
 //!
 //!  @brief       Reads data from the file referred by the ulFileId parameter. 
 //!               Reads data from file ulOffset till length. Err if the file can't
@@ -119,7 +107,7 @@ extern "C" {
 //!	 
 //*****************************************************************************
 
-extern signed long nvmem_read(unsigned long file_id, unsigned long length, unsigned long offset, unsigned char *buff);
+extern INT32 nvmem_read(UINT32 file_id, UINT32 length, UINT32 offset, UINT8 *buff);
 
 //*****************************************************************************
 //
@@ -143,7 +131,7 @@ extern signed long nvmem_read(unsigned long file_id, unsigned long length, unsig
 //!	 
 //*****************************************************************************
 
-extern signed long nvmem_write(unsigned long ulFileId, unsigned long ulLength, unsigned long ulEntryOffset, unsigned char *buff);
+extern INT32 nvmem_write(UINT32 ulFileId, UINT32 ulLength, UINT32 ulEntryOffset, UINT8 *buff);
 
 
 //*****************************************************************************
@@ -158,7 +146,7 @@ extern signed long nvmem_write(unsigned long ulFileId, unsigned long ulLength, u
 //!               mac address as appears over the air (OUI first)
 //!	 
 //*****************************************************************************
-extern	unsigned char nvmem_set_mac_address(unsigned char *mac);
+extern UINT8 nvmem_set_mac_address(UINT8 *mac);
 
 
 //*****************************************************************************
@@ -173,7 +161,7 @@ extern	unsigned char nvmem_set_mac_address(unsigned char *mac);
 //!               mac address as appears over the air (OUI first)
 //!	 
 //*****************************************************************************
-extern	unsigned char nvmem_get_mac_address(unsigned char *mac);
+extern UINT8 nvmem_get_mac_address(UINT8 *mac);
 
 
 //*****************************************************************************
@@ -193,7 +181,7 @@ extern	unsigned char nvmem_get_mac_address(unsigned char *mac);
 //!              applied in SP_PORTION_SIZE bytes portions.
 //!	 
 //*****************************************************************************
-extern	unsigned char nvmem_write_patch(unsigned long ulFileId, unsigned long spLength, const unsigned char *spData);
+extern UINT8 nvmem_write_patch(UINT32 ulFileId, UINT32 spLength, const UINT8 *spData);
 
 
 //*****************************************************************************
@@ -210,7 +198,7 @@ extern	unsigned char nvmem_write_patch(unsigned long ulFileId, unsigned long spL
 //!	 
 //*****************************************************************************
 #ifndef CC3000_TINY_DRIVER 
-extern	unsigned char nvmem_read_sp_version(unsigned char* patchVer);
+extern UINT8 nvmem_read_sp_version(UINT8* patchVer);
 #endif
 
 //*****************************************************************************
@@ -235,7 +223,7 @@ extern	unsigned char nvmem_read_sp_version(unsigned char* patchVer);
 //!              set ulNewLen=0.
 //!	 
 //*****************************************************************************
-extern signed long nvmem_create_entry(unsigned long file_id, unsigned long newlen);
+extern INT32 nvmem_create_entry(UINT32 file_id, UINT32 newlen);
 
 
 //*****************************************************************************

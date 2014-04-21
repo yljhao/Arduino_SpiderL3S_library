@@ -3,18 +3,6 @@
 *  cc3000_common.c.c  - CC3000 Host Driver Implementation.
 *  Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/
 *
-*
-*  This library porting from CC3000 host driver, which works with 
-*  Spider_L3S WiFi module.
-*
-*  Spider_L3S wifi module is developed by Funmaker, we are actively 
-*  involved in Taiwan maker community, and we aims to support makers 
-*  to make more creative projects. 
-*
-*  You can support us, by buying this wifi module, and we are looking
-*  forward to see your awesome projects!
-*
-*
 *  Redistribution and use in source and binary forms, with or without
 *  modification, are permitted provided that the following conditions
 *  are met:
@@ -51,10 +39,10 @@
 //
 //*****************************************************************************
 /******************************************************************************
- *
- * Include files
- *
- *****************************************************************************/
+*
+* Include files
+*
+*****************************************************************************/
 #include "cc3000_common.h"
 #include "socket.h"
 #include "wlan.h"
@@ -72,13 +60,11 @@
 //!  @brief stub function for ASSERT macro
 //
 //*****************************************************************************
-
-void
-__error__(char *pcFilename, unsigned long ulLine)
+void __error__(CHAR *pcFilename, UINT32 ulLine)
 {
-    //TODO full up function
-    (void)(pcFilename);
-    (void)(ulLine);
+	//TODO full up function
+	(void)(pcFilename);
+	(void)(ulLine);
 }
 
 
@@ -97,12 +83,12 @@ __error__(char *pcFilename, unsigned long ulLine)
 //
 //*****************************************************************************
 
-unsigned char* UINT32_TO_STREAM_f (unsigned char *p, unsigned long u32)
+UINT8* UINT32_TO_STREAM_f (UINT8 *p, UINT32 u32)
 {
-	*(p)++ = (unsigned char)(u32);
-	*(p)++ = (unsigned char)((u32) >> 8);
-	*(p)++ = (unsigned char)((u32) >> 16);
-	*(p)++ = (unsigned char)((u32) >> 24);
+	*(p)++ = (UINT8)(u32);
+	*(p)++ = (UINT8)((u32) >> 8);
+	*(p)++ = (UINT8)((u32) >> 16);
+	*(p)++ = (UINT8)((u32) >> 24);
 	return p;
 }
 
@@ -120,10 +106,10 @@ unsigned char* UINT32_TO_STREAM_f (unsigned char *p, unsigned long u32)
 //
 //*****************************************************************************
 
-unsigned char* UINT16_TO_STREAM_f (unsigned char *p, unsigned short u16)
+UINT8* UINT16_TO_STREAM_f (UINT8 *p, UINT16 u16)
 {
-	*(p)++ = (unsigned char)(u16);
-	*(p)++ = (unsigned char)((u16) >> 8);
+	*(p)++ = (UINT8)(u16);
+	*(p)++ = (UINT8)((u16) >> 8);
 	return p;
 }
 
@@ -141,11 +127,12 @@ unsigned char* UINT16_TO_STREAM_f (unsigned char *p, unsigned short u16)
 //
 //*****************************************************************************
 
-unsigned short STREAM_TO_UINT16_f(char* p, unsigned short offset)
-{
-	unsigned char *cp = (unsigned char*)p;
-        return (unsigned short)((unsigned short)((unsigned short)
-								(*(cp + offset + 1)) << 8) + (unsigned short)(*(cp + offset)));
+UINT16 STREAM_TO_UINT16_f(CHAR* p, UINT16 offset)
+{	
+	UINT8 *cp = 0;
+	cp = (UINT8*)p;
+	return (UINT16)((UINT16)((UINT16)
+		(*(cp + offset + 1)) << 8) + (UINT16)(*(cp + offset)));
 }
 
 //*****************************************************************************
@@ -162,13 +149,14 @@ unsigned short STREAM_TO_UINT16_f(char* p, unsigned short offset)
 //
 //*****************************************************************************
 
-unsigned long STREAM_TO_UINT32_f(char* p, unsigned short offset)
+UINT32 STREAM_TO_UINT32_f(CHAR* p, UINT16 offset)
 {
-	unsigned char *cp = (unsigned char*)p;
-        return (unsigned long)((unsigned long)((unsigned long)
-							 (*(cp + offset + 3)) << 24) + (unsigned long)((unsigned long)
-							 (*(cp + offset + 2)) << 16) + (unsigned long)((unsigned long)
-							 (*(cp + offset + 1)) << 8) + (unsigned long)(*(cp + offset)));
+	UINT8 *cp = 0;
+	cp = (UINT8*)p;
+	return (UINT32)((UINT32)((UINT32)
+		(*(cp + offset + 3)) << 24) + (UINT32)((UINT32)
+		(*(cp + offset + 2)) << 16) + (UINT32)((UINT32)
+		(*(cp + offset + 1)) << 8) + (UINT32)(*(cp + offset)));
 }
 
 

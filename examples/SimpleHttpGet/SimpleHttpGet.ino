@@ -55,17 +55,10 @@
 #include "WebClient.h"
 
 // Configure your WiFi module pin connection.
-#if 1
 unsigned char WLAN_CS = 4;
 unsigned char WLAN_EN = 7;
 unsigned char WLAN_IRQ = 2;
 unsigned char WLAN_IRQ_INTNUM = 0;
-#else
-unsigned char WLAN_CS = 24;
-unsigned char WLAN_EN = 25;
-unsigned char WLAN_IRQ = 21;
-unsigned char WLAN_IRQ_INTNUM = 2;
-#endif
 
 // Don't forget set correct WiFi SSID and Password.
 char AP_Ssid[] = {"WIFISSID"};

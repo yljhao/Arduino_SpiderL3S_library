@@ -144,7 +144,8 @@ int WebServer_get_request(int socket, char* req_buf, unsigned long buf_len){
     return Connect_stat;
 }
 
-int WebServer_process_request(int socket, char* method, unsigned char method_size, char* filename, unsigned char filename_size, char* content, unsigned char content_size){
+int WebServer_process_request(int socket, char* method, unsigned char method_size, char* filename, unsigned char filename_size, 
+                              char* content, unsigned char content_size, char* auth, unsigned char auth_size){
 
     #define STATE_GET_METHOD    0
     #define STATE_GET_FILENAME  1
@@ -153,6 +154,7 @@ int WebServer_process_request(int socket, char* method, unsigned char method_siz
     unsigned long tmr = 0;
     char data = 0;
     char content_head[4];
+    char auth_head[15];
     unsigned char state = 0;
 
     char data_pool[100];
@@ -162,8 +164,10 @@ int WebServer_process_request(int socket, char* method, unsigned char method_siz
     unsigned char method_ptr = 0;
     unsigned char filename_ptr = 0;
     unsigned char content_ptr = 0;
+    unsigned char auth_ptr = 0;
 
     memset(content_head, 0, sizeof(content_head));
+    memset(auth_head, 0, sizeof(auth_head));
 
 
     tmr = millis() + WEBSERVER_REQUEST_TIMEOUT;
@@ -177,6 +181,31 @@ int WebServer_process_request(int socket, char* method, unsigned char method_siz
                 tmr = millis() + WEBSERVER_REQUEST_TIMEOUT;
                 for(i = 0; i < ret; i++){
                     data = data_pool[i];
+
+                    // Find Authorization.
+                    if(strncmp_P(auth_head, PSTR("Authorization:"), 14) == 0){
+                        if(auth_ptr < auth_size){
+
+                            //Check \r\n or \n\r
+                            if( (data == '\r') && (auth[(auth_ptr - 1)] == '\n') ||
+                                (data == '\n') && (auth[(auth_ptr - 1)] == '\r') ){
+                                auth[(auth_ptr - 1)] = 0;
+                                memset(auth_head, 0, sizeof(auth_head));
+                            }
+                            else{
+                                auth[auth_ptr] = data;
+                                auth_ptr++;
+                            }
+                        }
+                        else{
+                            // Set auth_head to 0 to exit if condition
+                            memset(auth_head, 0, sizeof(auth_head));
+                        }
+                    }
+                    else{
+                        memcpy(auth_head, &auth_head[1], (sizeof(auth_head) - 1));
+                        auth_head[14] = data;
+                    }
 
                     // Check state
                     switch(state){

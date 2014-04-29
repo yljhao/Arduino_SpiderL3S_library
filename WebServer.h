@@ -75,7 +75,8 @@ extern int WebServer_request_available(int socket);
 
 extern int WebServer_get_request(int socket, char* req_buf, unsigned long buf_len);
 
-extern int WebServer_process_request(int socket, char* method, unsigned char method_size, char* filename, unsigned char filename_size, char* content, unsigned char content_size);
+extern int WebServer_process_request(int socket, char* method, unsigned char method_size, char* filename, unsigned char filename_size, 
+	                                 char* content, unsigned char content_size, char* auth, unsigned char auth_size);
 
 extern int WebServer_put_response(int socket, char* resp_buf, unsigned long buf_len);
 

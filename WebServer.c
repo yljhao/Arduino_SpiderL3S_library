@@ -187,8 +187,8 @@ int WebServer_process_request(int socket, char* method, unsigned char method_siz
                         if(auth_ptr < auth_size){
 
                             //Check \r\n or \n\r
-                            if( (data == '\r') && (auth[(auth_ptr - 1)] == '\n') ||
-                                (data == '\n') && (auth[(auth_ptr - 1)] == '\r') ){
+                            if( ((data == '\r') && (auth[(auth_ptr - 1)] == '\n')) ||
+                                ((data == '\n') && (auth[(auth_ptr - 1)] == '\r')) ){
                                 auth[(auth_ptr - 1)] = 0;
                                 memset(auth_head, 0, sizeof(auth_head));
                             }

@@ -50,6 +50,7 @@
 #include <Arduino.h>
 #include <stdio.h>
 #include <string.h>
+#include <SPI.h>
 
 #include "Spider_L3.h"
 

@@ -48,6 +48,7 @@
 *****************************************************************************/
 
 #include <Arduino.h>
+#include <SPI.h>
 #include <stdio.h>
 #include <string.h>
 

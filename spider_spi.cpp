@@ -49,6 +49,7 @@
 #include "hci.h"
 #include "evnt_handler.h"
 
+#include <SPI.h>
 
 #define         READ                                3
 #define         WRITE                               1
@@ -111,49 +112,17 @@ static volatile unsigned char   WLAN_INT_STATUE_REG = 0;
 #define WLAN_INT_PROCESS        0b00000010
 #define WLAN_INT_MISSED         0b00000100
 
-//
-// Config for storage SPI config for multiple SPI slave device usage.
-//
-static unsigned char wlan_spi_SPCR = 0;
-static unsigned char wlan_spi_SPSR = 0;
-static unsigned char org_spi_SPCR = 0;
-static unsigned char org_spi_SPSR = 0;
-
-#define SPI_CONF_SAVE_ORG() do{     \
-    org_spi_SPCR = SPCR;            \
-    org_spi_SPSR = SPSR;            \
-}while(0)
-
-#define SPI_CONF_SAVE_WLAN() do{    \
-    wlan_spi_SPCR = SPCR;           \
-    wlan_spi_SPSR = SPCR;           \
-}while(0)
-
-#define SPI_CONF_SET_ORG() do{      \
-    SPCR = org_spi_SPCR;            \
-    SPSR = org_spi_SPSR;            \
-}while(0)
-
-#define SPI_CONF_SET_WLAN() do{     \
-    SPCR = wlan_spi_SPCR;           \
-    SPSR = wlan_spi_SPSR;           \
-}while(0)
 
 /*
     GPIO register operate macro, for faster access time.
 */
 
-// For Arduino mega2560 operation. Set CS disable SPI functions.
 #define CC3000_CS_DISABLE() do{     \
     digitalWrite(WLAN_CS, HIGH);    \
-    SPI_CONF_SAVE_WLAN();           \
-    SPI_CONF_SET_ORG();             \
 }while(0)
 
-// For Arduino mega2560 operation. Clr CS enable SPI functions.
 #define CC3000_CS_ENABLE() do{      \
-    SPI_CONF_SAVE_ORG();            \
-    SPI_CONF_SET_WLAN();            \
+    init_spi();                     \ 
     digitalWrite(WLAN_CS, LOW);     \
 }while(0)
 
@@ -224,16 +193,6 @@ SpiClose(void)
     //
     tSLInformation.WlanInterruptDisable();
 }
-//*****************************************************************************
-//
-// SPI bus transfer data.
-//
-//*****************************************************************************
-byte SPI_transfer(byte putdata){
-    SPDR = putdata;
-    while (!(SPSR & _BV(SPIF)));
-    return SPDR;
-}
 
 //*****************************************************************************
 //
@@ -248,55 +207,10 @@ byte SPI_transfer(byte putdata){
 //*****************************************************************************
 int init_spi(void)
 {
-
-    /*
-        SPI.begin() function copy
-    */
-
-    // Set SS to high so a connected chip will be "deselected" by default
-    digitalWrite(SS, HIGH);
-
-    // When the SS pin is set as OUTPUT, it can be used as
-    // a general purpose output port (it doesn't influence
-    // SPI operations).
-    pinMode(SS, OUTPUT);
-
-    // Warning: if the SS pin ever becomes a LOW INPUT then SPI
-    // automatically switches to Slave, so the data direction of
-    // the SS pin MUST be kept as OUTPUT.
-    SPCR |= _BV(MSTR);
-    SPCR |= _BV(SPE);
-
-    // Set direction register for SCK and MOSI pin.
-    // MISO pin automatically overrides to INPUT.
-    // By doing this AFTER enabling SPI, we avoid accidentally
-    // clocking in a single bit since the lines go directly
-    // from "input" to SPI control.  
-    // http://code.google.com/p/arduino/issues/detail?id=888
-    pinMode(SCK, OUTPUT);
-    pinMode(MOSI, OUTPUT);
-
-    /*
-        SPI.setDataMode() function copy
-    */
-    SPCR = (SPCR & ~SPI_MODE_MASK) | WLAN_SPI_MODE;
-    
-    /*
-        SPI.setBitOrder() function copy
-    */
-    if(WLAN_SPI_BITORDER == LSBFIRST) {
-        SPCR |= _BV(DORD);
-    } else {
-        SPCR &= ~(_BV(DORD));
-    }
-  
-    /*
-        SPI.setClockDivider() function copy
-    */
-    SPCR = (SPCR & ~SPI_CLOCK_MASK) | (WLAN_SPI_CLOCK_DIV & SPI_CLOCK_MASK);
-    SPSR = (SPSR & ~SPI_2XCLOCK_MASK) | ((WLAN_SPI_CLOCK_DIV >> 2) & SPI_2XCLOCK_MASK);
-    
-    
+    SPI.begin();
+    SPI.setDataMode(WLAN_SPI_MODE);
+    SPI.setBitOrder(WLAN_SPI_BITORDER);
+    SPI.setClockDivider(WLAN_SPI_CLOCK_DIV);
     return 0;
 }
 //*****************************************************************************
@@ -328,10 +242,7 @@ void init_io(void){
 //*****************************************************************************
 void CC3000_Init(void){
     init_io();
-    SPI_CONF_SAVE_ORG();
     init_spi();
-    SPI_CONF_SAVE_WLAN();
-    SPI_CONF_SET_ORG();
 }
 
 //*****************************************************************************
@@ -531,7 +442,7 @@ SpiWriteDataSynchronous(unsigned char *data, unsigned short size)
 {
     unsigned short ptr;
     for(ptr = 0; ptr < size; ptr++){
-        SPI_transfer(data[ptr]);
+        SPI.transfer(data[ptr]);
     }
 }
 
@@ -552,7 +463,7 @@ SpiReadDataSynchronous(unsigned char *data, unsigned short size)
     unsigned short i = 0;
 
     for (i = 0; i < size; i ++) {
-        data[i] = SPI_transfer(0x03);
+        data[i] = SPI.transfer(0x03);
     }
 }
 

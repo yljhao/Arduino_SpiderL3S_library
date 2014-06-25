@@ -53,7 +53,33 @@
 #ifdef  __cplusplus
 extern "C" {
 #endif
+/*
+ * Fix conflict define
+ */
+#ifdef FD_SET
+#undef FD_SET
+#endif
 
+#ifdef FD_CLR
+#undef FD_CLR
+#endif
+
+#ifdef FD_ISSET
+#undef FD_ISSET
+#endif
+
+#ifdef FD_ZERO
+#undef FD_ZERO
+#endif
+
+#ifdef ENOBUFS
+#undef ENOBUFS
+#endif
+
+#ifdef fd_set
+#undef fd_set
+#endif
+ 
 #define HOSTNAME_MAX_LENGTH (230)  // 230 bytes + header shouldn't exceed 8 bit value
 
 //--------- Address Families --------

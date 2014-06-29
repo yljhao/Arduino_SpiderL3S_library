@@ -117,13 +117,15 @@ static volatile unsigned char   WLAN_INT_STATUE_REG = 0;
     GPIO register operate macro, for faster access time.
 */
 
-#define CC3000_CS_DISABLE() do{     \
-    digitalWrite(WLAN_CS, HIGH);    \
+#define CC3000_CS_DISABLE() do{                 \
+    digitalWrite(WLAN_CS, HIGH);                \
 }while(0)
 
-#define CC3000_CS_ENABLE() do{      \
-    init_spi();                     \ 
-    digitalWrite(WLAN_CS, LOW);     \
+#define CC3000_CS_ENABLE() do{                  \
+    SPI.setDataMode(WLAN_SPI_MODE);             \
+    SPI.setBitOrder(WLAN_SPI_BITORDER);         \
+    SPI.setClockDivider(WLAN_SPI_CLOCK_DIV);    \
+    digitalWrite(WLAN_CS, LOW);                 \
 }while(0)
 
 void SpiWriteDataSynchronous(unsigned char *data, unsigned short size);

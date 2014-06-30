@@ -199,6 +199,7 @@ int Initial_get_time(void){
     host_addr.sa_data[4] = tar_ip.ucip[1];
     host_addr.sa_data[5] = tar_ip.ucip[0];
 
+    return 0;
 }
 
 
@@ -206,9 +207,6 @@ int Initial_get_time(void){
 int get_time(unsigned int *year, unsigned char *month, unsigned int *day, unsigned char *hour, unsigned char *minute, unsigned char *second){
 
     // Reference table and parameter.
-    unsigned char ntp_request_header = 0b00100011;
-    unsigned long SEVENTY_YEAR_SEC   = 2208988800UL;
-    unsigned long UNIX_TIME_YEARS    = 1970;
     unsigned char m_d_table_normal[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     unsigned char m_d_table_leap[]   = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
@@ -222,7 +220,10 @@ int get_time(unsigned int *year, unsigned char *month, unsigned int *day, unsign
 
     Serial.print("Starting get time...");
     memset(msg, 0, sizeof(msg));
-    msg[0] = ntp_request_header;
+
+    // NTP time stamp request header, version 3, mode : 3 as client
+    // Reference => http://tools.ietf.org/html/rfc2030
+    msg[0] = 0b00100011;
     sendto(ntp_socket, msg, sizeof(msg), 0, &host_addr, sizeof(sockaddr));
 
     memset(&recv_addr, 0, sizeof(sockaddr));
@@ -232,7 +233,8 @@ int get_time(unsigned int *year, unsigned char *month, unsigned int *day, unsign
     gmt_offset = (MY_GMT) * 60 * 60;
     // Caculate timestamp rightnow
     timestamp_now = ((unsigned long)msg[40] << 24) | ((unsigned long)msg[41] << 16) | ((unsigned long)msg[42] << 8) | ((unsigned long)msg[43]);
-    timestamp_now -= SEVENTY_YEAR_SEC;
+    // Dec 70 years in second.
+    timestamp_now -= 2208988800UL;
     timestamp_now += gmt_offset;
 
     Serial.print("time stamp:");
@@ -244,10 +246,10 @@ int get_time(unsigned int *year, unsigned char *month, unsigned int *day, unsign
 
     *minute = (timestamp_now / 60) % 60;
 
-    *hour =  ((timestamp_now / 3600) % 24);
+    *hour =   (timestamp_now / 3600) % 24;
 
     // Counting total days from 1970/01/01
-    counter =  ((timestamp_now / 3600) / 24);
+    counter =  (timestamp_now / 86400);
 
     // Add 1 days.
     counter += 1; 

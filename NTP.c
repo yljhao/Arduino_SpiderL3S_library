@@ -1,7 +1,6 @@
 /*****************************************************************************
 *
-*  ntp.ino - Simple network time protocol client example.
-*
+*  NTP.c - Network time protocol library for Spider L3
 *  Copyright (c) 2014, FunMaker Ltd.
 *
 *
@@ -45,109 +44,18 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *
 *****************************************************************************/
-
-#include <Arduino.h>
-#include <SPI.h>
 #include <stdio.h>
 #include <string.h>
+#include <Arduino.h>
+#include "NTP.h"
 
-#include "Spider_L3.h"
+static long ntp_socket = 0xFFFFFFFF;
+static sockaddr    host_addr;
+static sockaddr    recv_addr;
+static socklen_t   recv_addr_l;
+static int GMT = 0;
 
-// GMT offset in program.
-#define MY_GMT              8
-
-// Update times per minute peroidic in ms.
-#define UPDATE_TIME_PEROID  500
-
-// Configure your WiFi module pin connection.
-unsigned char WLAN_CS = 4;
-unsigned char WLAN_EN = 7;
-unsigned char WLAN_IRQ = 2;
-unsigned char WLAN_IRQ_INTNUM = 0;
-
-
-const int INDICATE_LED = 13;
-
-// Don't forget set correct WiFi SSID and Password.
-char AP_Ssid[] = {"WIFISSID"};
-char AP_Pass[] = {"12345678"};
-
-long ntp_socket = 0xFFFFFFFF;
-sockaddr    host_addr;
-sockaddr    recv_addr;
-socklen_t   recv_addr_l;
-
-int Initial_get_time(void);
-
-void Initial_Spider(void) {          
-    int ret = 0;
-    /* initial uart message output interface. */
-    Serial.begin(115200);
-
-    Serial.println(F("=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+"));
-    Serial.println(F("        Spider L3 ntp client.         "));
-    Serial.println(F("=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+"));
-
-    /* initial status LED pin */
-    pinMode(INDICATE_LED, OUTPUT);
-    digitalWrite(INDICATE_LED, LOW);
-
-    /* Initial Spider L3 */
-    Serial.print(F("Starting Spider L3..."));
-    ret = Spider_begin();
-    if(ret != 0){
-        while(1){};
-    }
-    Serial.println(F("ok"));
-
-    // Spider L3 SPI interface initial success, indicated LED signal.
-    digitalWrite(INDICATE_LED, HIGH); 
-    delay(100);
-    digitalWrite(INDICATE_LED, LOW);
-
-    /* Connect to WiFi AP */
-    Serial.print(F("Connect to "));
-    Serial.write((unsigned char*)AP_Ssid, strlen(AP_Ssid));
-    Serial.print(F(" access point..."));
-    ret = Spider_Connect(3, (char*)AP_Ssid, (char*)AP_Pass);
-    if(ret != 0){
-        Serial.println(F("fail."));
-        while(1) ;
-    }
-    Serial.println(F("ok"));
-
-    /* wait connection and Get DHCP address finished */
-    Serial.print(F("Waiting DHCP..."));
-    while((Spider_CheckConnected() != 0) || (Spider_CheckDHCP() != 0)) {};
-    Serial.println(F("ok"));
-
-    // Spider L3 connect success, indicated LED signal.
-    digitalWrite(INDICATE_LED, HIGH); 
-    delay(100);
-    digitalWrite(INDICATE_LED, LOW);
-
-    /* Print device's IP address */
-    tNetappIpconfigRetArgs inf;
-    netapp_ipconfig(&inf);
-
-    Serial.print(F("Device's IP address:"));
-    Serial.print(inf.aucIP[3] ,DEC);
-    Serial.print(F("."));
-    Serial.print(inf.aucIP[2] ,DEC);
-    Serial.print(F("."));
-    Serial.print(inf.aucIP[1] ,DEC);
-    Serial.print(F("."));
-    Serial.print(inf.aucIP[0] ,DEC);
-    Serial.print(F("\r\n"));
-}
-
-void setup() {
-    Initial_Spider();
-    Initial_get_time();
-}
-
-int Initial_get_time(void){
-    char ntp_server[] = "time.stdtime.gov.tw";
+int NTP_begin(int Loc_GMT, char* ServerAddr){
     unsigned int ntp_port = 123; 
 
     int ret = -1;
@@ -165,8 +73,9 @@ int Initial_get_time(void){
 
     memset(&host_addr, 0, sizeof(sockaddr));
 
+    GMT = Loc_GMT;
     // Get ntp server's IP from host name.
-    ret = gethostbyname((char*)ntp_server, strlen(ntp_server), &(tar_ip.ulip));
+    ret = gethostbyname((char*)ServerAddr, strlen(ServerAddr), &(tar_ip.ulip));
     if(ret < 0){
         return -1;
     }
@@ -202,9 +111,8 @@ int Initial_get_time(void){
     return 0;
 }
 
-
-
-int get_time(unsigned int *year, unsigned char *month, unsigned int *day, unsigned char *hour, unsigned char *minute, unsigned char *second){
+int NTP_get_time(unsigned int *year, unsigned char *month, unsigned int *day, 
+                 unsigned char *hour, unsigned char *minute, unsigned char *second){
 
     // Reference table and parameter.
     unsigned char m_d_table_normal[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
@@ -218,7 +126,6 @@ int get_time(unsigned int *year, unsigned char *month, unsigned int *day, unsign
     
     unsigned char *m_d_ptr = 0;
 
-    Serial.print("Starting get time...");
     memset(msg, 0, sizeof(msg));
 
     // NTP time stamp request header, version 3, mode : 3 as client
@@ -230,15 +137,12 @@ int get_time(unsigned int *year, unsigned char *month, unsigned int *day, unsign
     recv_addr_l = 0;
     recvfrom(ntp_socket, msg, sizeof(msg), 0, &recv_addr, &recv_addr_l);
 
-    gmt_offset = (MY_GMT) * 60 * 60;
+    gmt_offset = (GMT) * 60 * 60;
     // Caculate timestamp rightnow
     timestamp_now = ((unsigned long)msg[40] << 24) | ((unsigned long)msg[41] << 16) | ((unsigned long)msg[42] << 8) | ((unsigned long)msg[43]);
     // Dec 70 years in second.
     timestamp_now -= 2208988800UL;
     timestamp_now += gmt_offset;
-
-    Serial.print("time stamp:");
-    Serial.println(timestamp_now, DEC);
 
     /* counting reference : http://maumaubug.blogspot.tw/2013/05/sntp-ntp-02-epoch-time.html */
 
@@ -287,55 +191,4 @@ int get_time(unsigned int *year, unsigned char *month, unsigned int *day, unsign
     }
 
     return ret;
-}
-
-
-void Find_Me(void){
-    /* Timer register */
-    static unsigned long tmr = 0;
-
-    /* Simple mdnsAdvisor function */
-    char mdns_msg[10];
-    memset(mdns_msg, 0, sizeof(mdns_msg));
-
-    if(millis() > tmr){
-        strncpy_P(mdns_msg, PSTR("NTP"), sizeof(mdns_msg));
-        mdnsAdvertiser(1, (char*)mdns_msg, strlen(mdns_msg));
-        tmr = millis() + 1000;
-    }
-}
-
-
-
-
-
-void loop() {
-    Find_Me();
-    static unsigned long update_tmr = 0;
-    if(millis() > update_tmr){
-        unsigned int  n_year = 0;
-        unsigned char n_month = 0;
-        unsigned int  n_day = 0;
-        unsigned char n_hour = 0;
-        unsigned char n_minute = 0;
-        unsigned char n_second = 0;
-
-        get_time(&n_year, &n_month, &n_day, &n_hour, &n_minute, &n_second);
-
-        Serial.print("Time :");
-        Serial.print(n_year, DEC);
-        Serial.print("-");
-        Serial.print(n_month, DEC);
-        Serial.print("-");
-        Serial.print(n_day, DEC);
-        Serial.print(" ");
-        Serial.print(n_hour, DEC);
-        Serial.print(":");
-        Serial.print(n_minute, DEC);
-        Serial.print(":");
-        Serial.print(n_second, DEC);
-        Serial.println();
-
-        update_tmr = millis() + UPDATE_TIME_PEROID;
-    }
 }

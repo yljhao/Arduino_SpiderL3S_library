@@ -143,26 +143,36 @@ void setup() {
 
 
 void WebService(void){
+    /* WebServer state switch */
     static unsigned char app_st = INIT_SERVER;
+    /* WebServer and client socket */
     static int http_server_socket = -1;
     static int client_socket = -1;
+    /* WebServer timer */
     static unsigned long task_timer = 0;
 
+    /* Acknowledgement data pool */
     char data_pool[100];
     int ret = 0;
 
-    char Method[5];
-    char file[30];
-    char contex[15];
+    /* Request buffer for WebRequest parser */ 
+    static char Method[5];
+    static char file[30];
+    static char content[15];
+    static char auth_dummy;
 
+    /* It's time to run service? */
     if(millis() > task_timer){
+        /* Check state and run it */
         switch(app_st){
+            /* Initial WebServer */
             case INIT_SERVER:
                 http_server_socket = WebServer_begin(80);
                 if(http_server_socket >= 0){
                     app_st = WAIT_CONNECT;
                 }
             break;
+            /* Wait client connect */
             case WAIT_CONNECT:
                 client_socket = WebServer_wait_connect(http_server_socket);
                 if(client_socket >= 0){
@@ -170,14 +180,18 @@ void WebService(void){
                     app_st = HANDLE_REQUEST;
                 }
             break;
+
+            /* Client sending request */
             case HANDLE_REQUEST:
                 Serial.println(F("Handle incomming request."));
 
+                /* Clear memory pool */
                 memset(Method, 0, sizeof(Method));
                 memset(file, 0, sizeof(file));
-                memset(contex, 0, sizeof(contex));
+                memset(content, 0, sizeof(content));
 
-                WebServer_process_request(client_socket, Method, sizeof(Method), file, sizeof(file), contex, sizeof(contex));
+                /* Parse request */
+                WebServer_process_request(client_socket, Method, sizeof(Method), file, sizeof(file), content, sizeof(content), &auth_dummy, 0);
 
                 Serial.print(F("Method : "));
                 Serial.write((unsigned char*)Method, strlen(Method));
@@ -185,29 +199,32 @@ void WebService(void){
                 Serial.print(F("filename : "));
                 Serial.write((unsigned char*)file, strlen(file));
                 Serial.println();
-                Serial.print(F("CGI parameter : "));
-                Serial.write((unsigned char*)contex, strlen(contex));
+                Serial.print(F("contentt: "));
+                Serial.write((unsigned char*)content, strlen(content));
                 Serial.println();
                 app_st = HANDLE_GET_RESPONSE;
                 break;
 
+            /* Handle request */
             case HANDLE_GET_RESPONSE:
             case HANDLE_POST_RESPONSE:
-
+                /* Ask for favorite icon */
                 if(strstr_P(file, PSTR("favicon")) != 0){
+                    /* Acknowledge file not found*/
                     WebServer_put_notfound(client_socket);
                     task_timer = millis() + 100;
                     app_st = CLOSE_CLIENT_CONN;
                     break;
                 }
-
-                if(strstr_P(contex, PSTR("HIGH")) != 0){
+                /* Check incomming content is HIGH? */
+                if(strstr_P(content, PSTR("HIGH")) != 0){
                     CONTROL_STATE = HIGH;
                 }
-
-                if(strstr_P(contex, PSTR("LOW")) != 0){
+                /* Check incomming content is LOW? */
+                if(strstr_P(content, PSTR("LOW")) != 0){
                     CONTROL_STATE = LOW;
                 }
+                /* Change LED state */
                 digitalWrite(INDICATE_LED, CONTROL_STATE);
 
                 Serial.println(F("Acknowledge webpage."));
@@ -225,7 +242,7 @@ void WebService(void){
                 strncpy_P(data_pool, PSTR("Connection: close\r\n\r\n"), sizeof(data_pool));
                 WebServer_put_response(client_socket, data_pool, strlen(data_pool));
 
-                /* PUT Message */
+                /* PUT HTML webpage */
                 memset(data_pool, 0, sizeof(data_pool));
                 strncpy_P(data_pool, PSTR("<html>\r\n<body>\r\n\r\n"), sizeof(data_pool));
                 WebServer_put_response(client_socket, data_pool, strlen(data_pool));
@@ -261,10 +278,12 @@ void WebService(void){
                 strncpy_P(data_pool, PSTR("</html>\r\n</body>\r\n\r\n"), sizeof(data_pool));
                 WebServer_put_response(client_socket, data_pool, strlen(data_pool));
 
+                /* Process service after 100ms */
                 task_timer = millis() + 100;
                 app_st = CLOSE_CLIENT_CONN;
             break;
 
+            /* Close client connection */
             case CLOSE_CLIENT_CONN:
                 Serial.println(F("Close connection."));
                 WebServer_close_connect(client_socket);
@@ -273,7 +292,6 @@ void WebService(void){
             break;
 
         }
-        task_timer = millis() + 100;
     }
 }
 

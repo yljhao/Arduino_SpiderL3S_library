@@ -172,6 +172,11 @@ int Spider_close(void){
   
   wlan_stop();
   HW_Initialed = 0;
+  SmartConfigFinished = 0;
+  StopSmartConfig = 0;
+  SpiderConnected = 0;
+  SpiderDHCP = 0;
+  SpiderCanShutDown = 0;
   return 0;
 }
 /*------------------------------------------------------------------------
@@ -315,6 +320,14 @@ int Spider_Disconnect(void){
       return -2;
     }
 
+    while((SpiderDHCP != 0) && (SpiderConnected != 0));
+
+    SmartConfigFinished = 0;
+    StopSmartConfig = 0;
+    SpiderConnected = 0;
+    SpiderDHCP = 0;
+    SpiderCanShutDown = 0;
+
     return 0;
 }
 
@@ -344,9 +357,9 @@ int Spider_Connect(unsigned long sec_mode, char* tar_ssid, char* tar_password){
   wlan_ioctl_set_connection_policy(0, 0, 0);
 
   // Check and wait until CC3000 disconnect from current network.
-  while (SpiderConnected == 1) {
-    delay(100);
-  }
+  //while (SpiderConnected == 1) {
+  //  delay(100);
+  //}
   
   // Connect to AP
   ret = wlan_connect(sec_mode, tar_ssid, strlen(tar_ssid), 0, (unsigned char*)tar_password, strlen(tar_password));
@@ -357,9 +370,9 @@ int Spider_Connect(unsigned long sec_mode, char* tar_ssid, char* tar_password){
   }
 
   // Wait connect flag.
-  while(SpiderConnected != 1){
-    delay(100);
-  }
+  //while(SpiderConnected != 1){
+  //  delay(100);
+  //}
 
   return 0;
 }

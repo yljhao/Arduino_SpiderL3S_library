@@ -131,11 +131,13 @@ int NTP_get_time(unsigned int *year, unsigned char *month, unsigned int *day,
     // NTP time stamp request header, version 3, mode : 3 as client
     // Reference => http://tools.ietf.org/html/rfc2030
     msg[0] = 0b00100011;
-    sendto(ntp_socket, msg, sizeof(msg), 0, &host_addr, sizeof(sockaddr));
+    ret = sendto(ntp_socket, msg, sizeof(msg), 0, &host_addr, sizeof(sockaddr));
+    if(ret < 0) return ret;
 
     memset(&recv_addr, 0, sizeof(sockaddr));
     recv_addr_l = 0;
-    recvfrom(ntp_socket, msg, sizeof(msg), 0, &recv_addr, &recv_addr_l);
+    ret = recvfrom(ntp_socket, msg, sizeof(msg), 0, &recv_addr, &recv_addr_l);
+    if(ret < 0) return ret;
 
     gmt_offset = (GMT) * 60 * 60;
     // Caculate timestamp rightnow
@@ -190,5 +192,5 @@ int NTP_get_time(unsigned int *year, unsigned char *month, unsigned int *day,
         }
     }
 
-    return ret;
+    return 1;
 }

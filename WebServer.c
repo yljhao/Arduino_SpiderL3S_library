@@ -90,7 +90,7 @@ int WebServer_wait_connect(int socket){
 
     client_sock = accept(socket, (sockaddr *)&client_name, &client_name_len);
     if(client_sock < 0){
-        return -1;
+        return client_sock;
     }
 
     long timeout = 10;
@@ -154,7 +154,11 @@ int WebServer_process_request(int socket, char* method, unsigned char method_siz
     unsigned long tmr = 0;
     char data = 0;
     char content_head[4];
-    char auth_head[15];
+
+    // A string fifo for parsing purpose.
+    char str_fifo[50];
+    int content_length = 0;
+
     unsigned char state = 0;
 
     char data_pool[100];
@@ -167,8 +171,8 @@ int WebServer_process_request(int socket, char* method, unsigned char method_siz
     unsigned char auth_ptr = 0;
 
     memset(content_head, 0, sizeof(content_head));
-    memset(auth_head, 0, sizeof(auth_head));
 
+    memset(str_fifo, ' ', sizeof(str_fifo));
 
     tmr = millis() + WEBSERVER_REQUEST_TIMEOUT;
 
@@ -176,37 +180,12 @@ int WebServer_process_request(int socket, char* method, unsigned char method_siz
         //if(WebServer_request_available(socket) == 0){
             // Get char
             //WebServer_get_request(socket, &data, 1);
+            memset(data_pool, 0, sizeof(data_pool));
             ret = WebServer_get_request(socket, data_pool, sizeof(data_pool));
             if(ret > 0){
                 tmr = millis() + WEBSERVER_REQUEST_TIMEOUT;
                 for(i = 0; i < ret; i++){
                     data = data_pool[i];
-
-                    // Find Authorization.
-                    if(strncmp_P(auth_head, PSTR("Authorization:"), 14) == 0){
-                        if(auth_ptr < auth_size){
-
-                            //Check \r\n or \n\r
-                            if( ((data == '\r') && (auth[(auth_ptr - 1)] == '\n')) ||
-                                ((data == '\n') && (auth[(auth_ptr - 1)] == '\r')) ){
-                                auth[(auth_ptr - 1)] = 0;
-                                memset(auth_head, 0, sizeof(auth_head));
-                            }
-                            else{
-                                auth[auth_ptr] = data;
-                                auth_ptr++;
-                            }
-                        }
-                        else{
-                            // Set auth_head to 0 to exit if condition
-                            memset(auth_head, 0, sizeof(auth_head));
-                        }
-                    }
-                    else{
-                        memcpy(auth_head, &auth_head[1], (sizeof(auth_head) - 1));
-                        auth_head[14] = data;
-                    }
-
                     // Check state
                     switch(state){
 
@@ -237,10 +216,40 @@ int WebServer_process_request(int socket, char* method, unsigned char method_siz
                         break;
 
                         case STATE_GET_CONTENT:
+
+                            str_fifo[(sizeof(str_fifo) - 1)] = data;
+
+                            if((str_fifo[sizeof(str_fifo) - 2] == '\r') && (str_fifo[sizeof(str_fifo) - 1] == '\n')){
+                                str_fifo[sizeof(str_fifo) - 2] = 0;
+                                str_fifo[sizeof(str_fifo) - 1] = 0;
+                                // Get line, parsing header.
+                                char* str = 0;
+                                // Parse http status;
+                                
+                                str = strstr(str_fifo, "Authorization: Basic ");
+                                if(str != 0){
+                                    sscanf(str, "Authorization: Basic %s", auth);
+                                }
+                                
+                                str = strstr_P(str_fifo, PSTR("Content-Length:"));
+                                if(str != 0){
+                                    sscanf(str, "Content-Length:%d", &content_length);
+                                }
+                                memset(str_fifo, ' ', sizeof(str_fifo));
+                            }
+                            else{
+                                // Read line
+                                memcpy(&str_fifo[0], &str_fifo[1], (sizeof(str_fifo) - 1));
+                            }
+
                             if((content_head[0] == '\r') && (content_head[1] == '\n') && (content_head[2] == '\r') && (content_head[3] == '\n')){
-                                if(content_ptr < content_size){
+                                
+                                if((content_ptr < content_size) && (content_ptr < content_length)){
                                     content[content_ptr] = data;
                                     content_ptr++;
+                                }
+                                else{
+                                    return 0;
                                 }
                             }else{
                                 memcpy(content_head, &content_head[1], (sizeof(content_head) - 1));
@@ -254,20 +263,14 @@ int WebServer_process_request(int socket, char* method, unsigned char method_siz
 
                 }
             }
+            else if(ret < 0) return ret;
         //}
     }
     return 0;
 }
 
 int WebServer_put_response(int socket, char* resp_buf, unsigned long buf_len){
-
-    int             Connect_stat = -1;
-
-    Connect_stat = send(socket, resp_buf, buf_len, 0);
-    if(Connect_stat < 0){
-        return -1;
-    }
-    return Connect_stat;
+    return send(socket, resp_buf, buf_len, 0);
 }
 
 int WebServer_put_badrequest(int socket){

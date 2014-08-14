@@ -229,14 +229,16 @@ int init_spi(void)
 void init_io(void){
 
     WLAN_INT_STATUE_REG |= WLAN_INT_ENABLE;
-    pinMode(WLAN_IRQ, INPUT);
-    attachInterrupt(WLAN_IRQ_INTNUM, WLAN_IRQ_Handler, FALLING);
-
     pinMode(WLAN_EN, OUTPUT);
     digitalWrite(WLAN_EN, LOW); // make sure it's off until we're ready
-    
+    delay(500);
+
     pinMode(WLAN_CS, OUTPUT);
     CC3000_CS_DISABLE();
+
+    pinMode(WLAN_IRQ, INPUT);
+    attachInterrupt(WLAN_IRQ_INTNUM, WLAN_IRQ_Handler, FALLING);
+    
 }
 
 //*****************************************************************************
@@ -303,12 +305,14 @@ SpiFirstWrite(unsigned char *ucBuf, unsigned short usLength)
     CC3000_CS_ENABLE();
     
     // Assuming we are running on 24 MHz ~50 micro delay is 1200 cycles;
-    delayMicroseconds(50);
+    //delayMicroseconds(50);
+    delay(1);
     
     // SPI writes first 4 bytes of data
     SpiWriteDataSynchronous(ucBuf, 4);
 
-    delayMicroseconds(50);
+    //delayMicroseconds(50);
+    delay(1);
     
     SpiWriteDataSynchronous(ucBuf + 4, usLength - 4);
 

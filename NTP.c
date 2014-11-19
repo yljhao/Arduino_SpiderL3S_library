@@ -114,6 +114,8 @@ int NTP_begin(int Loc_GMT, char* ServerAddr){
 int NTP_get_time(unsigned int *year, unsigned char *month, unsigned int *day, 
                  unsigned char *hour, unsigned char *minute, unsigned char *second){
 
+    static unsigned char first_send = 1;
+
     // Reference table and parameter.
     unsigned char m_d_table_normal[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     unsigned char m_d_table_leap[]   = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
@@ -132,6 +134,11 @@ int NTP_get_time(unsigned int *year, unsigned char *month, unsigned int *day,
     // Reference => http://tools.ietf.org/html/rfc2030
     msg[0] = 0b00100011;
     ret = sendto(ntp_socket, msg, sizeof(msg), 0, &host_addr, sizeof(sockaddr));
+    if(first_send){
+        Spider_Start_ARP_EVENT();
+        while( Spider_Chk_ARP_EVENT() == SPIDER_ARP_FLAG_DONE) {};
+        first_send = 0;
+    }
     if(ret < 0) return ret;
 
     memset(&recv_addr, 0, sizeof(sockaddr));

@@ -58,6 +58,10 @@
 #include "wlan.h"
 #include "spider_spi.h"
 
+#define SPIDER_ARP_FLAG_INIT		1
+#define SPIDER_ARP_FLAG_PROC		2
+#define SPIDER_ARP_FLAG_DONE		3
+
 #ifdef  __cplusplus
 extern "C" {
 #endif
@@ -81,6 +85,8 @@ extern int Spider_SmartConfig(void);
 extern int Spider_SmartConfig_AckFinish(char* ack_msg);
 
 extern int Spider_AutoConnect(void);
+
+extern void Spider_Start_ARP_EVENT(void);
 
 extern unsigned char Spider_Chk_ARP_EVENT(void);
 

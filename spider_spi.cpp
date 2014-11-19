@@ -236,6 +236,7 @@ void init_io(void){
     pinMode(WLAN_CS, OUTPUT);
     CC3000_CS_DISABLE();
 
+    digitalWrite(WLAN_IRQ, HIGH); // make sure it's off until we're ready
     pinMode(WLAN_IRQ, INPUT);
     attachInterrupt(WLAN_IRQ_INTNUM, WLAN_IRQ_Handler, FALLING);
     

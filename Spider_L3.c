@@ -170,7 +170,9 @@ int Spider_begin(void){
 -----------------------------------------------------------------------*/
 int Spider_close(void){
   
-  wlan_stop();
+  //wlan_stop();
+  WriteWlanPin(0);
+  SpiClose();
   HW_Initialed = 0;
   SmartConfigFinished = 0;
   StopSmartConfig = 0;

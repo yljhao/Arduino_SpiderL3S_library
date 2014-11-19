@@ -50,11 +50,18 @@
 #include "WebServer.h"
 
 int WebServer_begin(unsigned short port){
-    int httpd = 0;
+    int httpd = -1;
     sockaddr_in name;
 
     httpd = socket(AF_INET, SOCK_STREAM, 0);
     if(httpd < 0){
+        return -1;
+    }
+	
+
+    long timeout = 100;
+    if(setsockopt(httpd, SOL_SOCKET, SOCKOPT_RECV_TIMEOUT, &timeout, sizeof(timeout)) < 0){
+        closesocket(httpd);
         return -1;
     }
 

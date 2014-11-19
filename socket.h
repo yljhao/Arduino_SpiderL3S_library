@@ -53,33 +53,7 @@
 #ifdef  __cplusplus
 extern "C" {
 #endif
-/*
- * Fix conflict define
- */
-#ifdef FD_SET
-#undef FD_SET
-#endif
 
-#ifdef FD_CLR
-#undef FD_CLR
-#endif
-
-#ifdef FD_ISSET
-#undef FD_ISSET
-#endif
-
-#ifdef FD_ZERO
-#undef FD_ZERO
-#endif
-
-#ifdef ENOBUFS
-#undef ENOBUFS
-#endif
-
-#ifdef fd_set
-#undef fd_set
-#endif
- 
 #define HOSTNAME_MAX_LENGTH (230)  // 230 bytes + header shouldn't exceed 8 bit value
 
 //--------- Address Families --------
@@ -132,7 +106,6 @@ extern "C" {
 #define  ASIC_ADDR_LEN          8
 	
 #define NO_QUERY_RECIVED        -3
-	
 	
 typedef struct _in_addr_t
 {
@@ -241,7 +214,7 @@ typedef struct
 //!          application layer to obtain a socket handle.
 //
 //*****************************************************************************
-extern INT16 socket(INT32 domain, INT32 type, INT32 protocol);
+extern INT32 socket(INT32 domain, INT32 type, INT32 protocol);
 
 //*****************************************************************************
 //
@@ -478,13 +451,19 @@ extern INT16 select(INT32 nfds, fd_set *readsds, fd_set *writesds,
 //!  @Note   On this version the following two socket options are enabled:
 //!    			 The only protocol level supported in this version
 //!          is SOL_SOCKET (level).
-//!		       1. SOCKOPT_RECV_TIMEOUT (optname)
-//!			      SOCKOPT_RECV_TIMEOUT configures recv and recvfrom timeout 
+//!           1. SOCKOPT_RECV_NONBLOCK (optname)
+//!           SOCKOPT_RECV_NONBLOCK sets the recv and recvfrom 
+//!           non-blocking modes on or off.
+//!           In that case optval should be SOCK_ON or SOCK_OFF (optval).
+//!
+//!           2. SOCKOPT_RECV_TIMEOUT (optname)
+//!           SOCKOPT_RECV_TIMEOUT configures recv and recvfrom timeout 
 //!           in milliseconds.
-//!		        In that case optval should be pointer to UINT32.
-//!		       2. SOCKOPT_NONBLOCK (optname). sets the socket non-blocking mode on 
-//!           or off.
-//!		        In that case optval should be SOCK_ON or SOCK_OFF (optval).
+//!           In that case optval should be pointer to UINT32.
+//!		       
+//!           3. SOCKOPT_ACCEPT_NONBLOCK (optname). sets the socket accept 
+//!           non-blocking mode on or off.
+//!           In that case optval should be SOCK_ON or SOCK_OFF (optval).
 //!
 //!  @sa getsockopt
 //
@@ -528,13 +507,20 @@ extern INT16 setsockopt(INT32 sd, INT32 level, INT32 optname, const void *optval
 //!  @Note   On this version the following two socket options are enabled:
 //!    			 The only protocol level supported in this version
 //!          is SOL_SOCKET (level).
-//!		       1. SOCKOPT_RECV_TIMEOUT (optname)
-//!			      SOCKOPT_RECV_TIMEOUT configures recv and recvfrom timeout 
+//!           1. SOCKOPT_RECV_NONBLOCK (optname)
+//!           SOCKOPT_RECV_NONBLOCK sets the recv and recvfrom 
+//!           non-blocking modes on or off.
+//!           In that case optval should be SOCK_ON or SOCK_OFF (optval).
+//!
+//!           2. SOCKOPT_RECV_TIMEOUT (optname)
+//!           SOCKOPT_RECV_TIMEOUT configures recv and recvfrom timeout 
 //!           in milliseconds.
-//!		        In that case optval should be pointer to UINT32.
-//!		       2. SOCKOPT_NONBLOCK (optname). sets the socket non-blocking mode on 
-//!           or off.
-//!		        In that case optval should be SOCK_ON or SOCK_OFF (optval).
+//!           In that case optval should be pointer to UINT32.
+//!
+//!           3. SOCKOPT_ACCEPT_NONBLOCK (optname). sets the socket accept 
+//!           non-blocking mode on or off.
+//!           In that case optval should be SOCK_ON or SOCK_OFF (optval).
+//!		       
 //!
 //!  @sa setsockopt
 //
@@ -657,16 +643,15 @@ extern INT16 sendto(INT32 sd, const void *buf, INT32 len, INT32 flags,
 //!  @param[in] deviceServiceName   Service name as part of the published
 //!                                 canonical domain name
 //!  @param[in] deviceServiceNameLength   Length of the service name - up to 32 chars
-//!  
 //!
-//!  @return   On success, zero is returned, return SOC_ERROR if socket was not 
+//!
+//!  @return   On success, zero is returned, return SOC_ERROR if socket was not
 //!            opened successfully, or if an error occurred.
 //!
 //!  @brief    Set CC3000 in mDNS advertiser mode in order to advertise itself.
 //
 //*****************************************************************************
 extern INT16 mdnsAdvertiser(UINT16 mdnsEnabled, CHAR * deviceServiceName, UINT16 deviceServiceNameLength);
-
 
 //*****************************************************************************
 //

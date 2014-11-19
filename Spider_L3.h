@@ -82,6 +82,8 @@ extern int Spider_SmartConfig_AckFinish(char* ack_msg);
 
 extern int Spider_AutoConnect(void);
 
+extern unsigned char Spider_Chk_ARP_EVENT(void);
+
 #ifdef  __cplusplus
 }
 #endif

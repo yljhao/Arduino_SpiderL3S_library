@@ -100,9 +100,8 @@ INT32 hci_data_send(UINT8 ucOpcode,
 	const UINT8 *ucTail,
 	UINT16 usTailLength)
 {
-	UINT8 *stream;
-	
 	(void)(ucTail);
+	UINT8 *stream;
 
 	stream = ((ucArgs) + SPI_HEADER_SIZE);
 

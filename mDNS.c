@@ -130,7 +130,7 @@ int mDNS_Advertiser(char* device_name, unsigned char ip1, unsigned char ip2, uns
     mdns_adresponse[mdns_adr_len] = ip4;
     mdns_adr_len += 1;
 
-    sendto(mdns_socket, mdns_adresponse, mdns_adr_len, 0, &mdns_addr, sizeof(mdns_addr));
+    return sendto(mdns_socket, mdns_adresponse, mdns_adr_len, 0, &mdns_addr, sizeof(mdns_addr));
 
 }
 

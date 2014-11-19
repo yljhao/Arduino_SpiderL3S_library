@@ -62,7 +62,7 @@ static volatile unsigned char StopSmartConfig = 0;
 static volatile unsigned char SpiderConnected = 0;
 static volatile unsigned char SpiderDHCP = 0;
 static volatile unsigned char SpiderCanShutDown = 0;
-
+static volatile unsigned char SpiderARP_Wait = 0;
 /*-------------------------------------------------------------------
 
     The TI library calls this routine when asynchronous events happen.
@@ -101,7 +101,15 @@ void Spider_AsyncCallback(long lEventType, char * data, unsigned char length)
         case HCI_EVENT_CC3000_CAN_SHUT_DOWN:
             SpiderCanShutDown = 1;
             break;
-                        
+
+        case HCI_EVNT_ASYNC_ARP_DONE:
+            SpiderARP_Wait = 0;
+            break;  
+
+        case HCI_EVNT_ASYNC_ARP_WAITING:
+            SpiderARP_Wait = 1;
+            break;      
+
         default:
             break;      
     }
@@ -410,4 +418,16 @@ int Spider_CheckConnected(void){
   else{
     return -1;
   }
+}
+
+/*------------------------------------------------------------------------
+  
+  Spider_CheckConnected
+  Check CC3000 get ip address from DHCP server or not. 
+
+  return  1, please wait ARP event complete.
+  return  0, no ARP event.
+-----------------------------------------------------------------------*/
+unsigned char Spider_Chk_ARP_EVENT(void){
+  return SpiderARP_Wait;
 }

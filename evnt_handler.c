@@ -117,6 +117,9 @@
 
 UINT32 socket_active_status = SOCKET_STATUS_INIT_VAL; 
 
+#ifdef MDNS_ADVERTISE_HOST
+UINT8 localIP[NETAPP_IPCONFIG_IP_LENGTH];
+#endif
 
 //*****************************************************************************
 //            Prototypes for the static functions
@@ -125,7 +128,6 @@ UINT32 socket_active_status = SOCKET_STATUS_INIT_VAL;
 static INT32 hci_event_unsol_flowcontrol_handler(CHAR *pEvent);
 
 static void update_socket_active_status(CHAR *resp_params);
-
 
 //*****************************************************************************
 //
@@ -559,6 +561,13 @@ INT32 hci_unsol_event_handler(CHAR *event_hdr)
 				//Read IP address
 				STREAM_TO_STREAM(data,recParams,NETAPP_IPCONFIG_IP_LENGTH);
 				data += 4;
+
+#ifdef MDNS_ADVERTISE_HOST
+				localIP[0] = *(recParams-NETAPP_IPCONFIG_IP_LENGTH);
+				localIP[1] = *(recParams-NETAPP_IPCONFIG_IP_LENGTH + 1);
+				localIP[2] = *(recParams-NETAPP_IPCONFIG_IP_LENGTH + 2);
+				localIP[3] = *(recParams-NETAPP_IPCONFIG_IP_LENGTH + 3);
+#endif
 				//Read subnet
 				STREAM_TO_STREAM(data,recParams,NETAPP_IPCONFIG_IP_LENGTH);
 				data += 4;
@@ -608,7 +617,15 @@ INT32 hci_unsol_event_handler(CHAR *event_hdr)
 					tSLInformation.sWlanCB(event_type, data, 1);
 				}
 			}
-			break;
+            break;
+            
+        case HCI_EVNT_ASYNC_ARP_DONE:
+        case HCI_EVNT_ASYNC_ARP_WAITING:
+        	if( tSLInformation.sWlanCB )
+			{
+				tSLInformation.sWlanCB(event_type, 0, 0);
+			}
+            break;
 
 			//'default' case which means "event not supported" 	
 		default: 

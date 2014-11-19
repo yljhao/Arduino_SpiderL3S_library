@@ -36,6 +36,7 @@
 #define __COMMON_H__
 
 #include "data_types.h"
+#include "error_codes.h"
 
 //******************************************************************************
 // Include files
@@ -64,8 +65,6 @@ extern "C" {
 //*****************************************************************************
 //                  COMMON DEFINES
 //*****************************************************************************
-#define ERROR_SOCKET_INACTIVE   -57 
-
 #define WLAN_ENABLE      (1)   
 #define WLAN_DISABLE     (0)
 
@@ -126,7 +125,7 @@ extern "C" {
  
   The 1 is used for the overrun detection */ 
 
-#define	CC3000_MINIMAL_TX_SIZE      (130 + 105 + 1)  
+#define	CC3000_MINIMAL_TX_SIZE      (130 + 105 + 1)
 #define	CC3000_MAXIMAL_TX_SIZE      (1519 + 1)
 
 //TX and RX buffer sizes, allow to receive and transmit maximum data at length 8.
@@ -146,8 +145,13 @@ extern "C" {
   
 #ifndef CC3000_TINY_DRIVER
   
-	#define CC3000_RX_BUFFER_SIZE   (CC3000_MINIMAL_RX_SIZE)
-	#define CC3000_TX_BUFFER_SIZE   (CC3000_MINIMAL_TX_SIZE)
+#ifdef MDNS_ADVERTISE_HOST
+    #define CC3000_RX_BUFFER_SIZE   (CC3000_MAXIMAL_RX_SIZE)
+    #define CC3000_TX_BUFFER_SIZE   (CC3000_MAXIMAL_TX_SIZE)
+#else
+    #define CC3000_RX_BUFFER_SIZE   (CC3000_MINIMAL_RX_SIZE)
+    #define CC3000_TX_BUFFER_SIZE   (CC3000_MINIMAL_TX_SIZE)
+#endif
   
 //if defined TINY DRIVER we use smaller RX and TX buffer in order to minimize RAM consumption
 #else

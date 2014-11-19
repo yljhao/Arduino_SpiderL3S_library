@@ -128,11 +128,9 @@ UINT8* UINT16_TO_STREAM_f (UINT8 *p, UINT16 u16)
 //*****************************************************************************
 
 UINT16 STREAM_TO_UINT16_f(CHAR* p, UINT16 offset)
-{	
-	UINT8 *cp = 0;
-	cp = (UINT8*)p;
+{
 	return (UINT16)((UINT16)((UINT16)
-		(*(cp + offset + 1)) << 8) + (UINT16)(*(cp + offset)));
+		(*(p + offset + 1)) << 8) + (UINT16)(*(p + offset)));
 }
 
 //*****************************************************************************
@@ -151,12 +149,10 @@ UINT16 STREAM_TO_UINT16_f(CHAR* p, UINT16 offset)
 
 UINT32 STREAM_TO_UINT32_f(CHAR* p, UINT16 offset)
 {
-	UINT8 *cp = 0;
-	cp = (UINT8*)p;
 	return (UINT32)((UINT32)((UINT32)
-		(*(cp + offset + 3)) << 24) + (UINT32)((UINT32)
-		(*(cp + offset + 2)) << 16) + (UINT32)((UINT32)
-		(*(cp + offset + 1)) << 8) + (UINT32)(*(cp + offset)));
+		(*(p + offset + 3)) << 24) + (UINT32)((UINT32)
+		(*(p + offset + 2)) << 16) + (UINT32)((UINT32)
+		(*(p + offset + 1)) << 8) + (UINT32)(*(p + offset)));
 }
 
 

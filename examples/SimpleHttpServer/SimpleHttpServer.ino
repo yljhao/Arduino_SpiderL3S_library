@@ -1,7 +1,7 @@
 /*****************************************************************************
 *
 *  SimpleHttpServer.ino - Simple HTTP web server, user can change 
-*  GPIO status from web page.
+*  Arduino on board LED status from web page.
 *
 *  Copyright (c) 2014, FunMaker Ltd.
 *
@@ -61,14 +61,14 @@ unsigned char WLAN_EN = 7;
 unsigned char WLAN_IRQ = 2;
 unsigned char WLAN_IRQ_INTNUM = 0;
 
+
 // Don't forget set correct WiFi SSID and Password.
-char AP_Ssid[] = {"WIFISSID"};
-char AP_Pass[] = {"123456"};
+char AP_Ssid[] = {"QWERTYUI"};
+char AP_Pass[] = {"12345678"};
 
+// Arduino onboard LED
 const int INDICATE_LED = 13;
-
-const int CONTROL_GPIO = 8;
-
+// GPIO state
 unsigned char CONTROL_STATE = LOW;
 
 
@@ -79,6 +79,7 @@ void setup() {
     /* initial uart debug output interface. */
     Serial.begin(115200);
 
+    /* Welcome message */
     Serial.println(F("=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+"));
     Serial.println(F("     Spider L3 simple http server.    "));
     Serial.println(F("=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+"));
@@ -87,11 +88,9 @@ void setup() {
     pinMode(INDICATE_LED, OUTPUT);
     digitalWrite(INDICATE_LED, LOW);
 
+    /* Initial control state */
     CONTROL_STATE = LOW;
     digitalWrite(INDICATE_LED, CONTROL_STATE);
-
-    /* Initial monitor IO pin */
-    pinMode(8, INPUT);
 
     /* Initial Spider L3 */
     Serial.print(F("Starting Spider L3..."));
@@ -118,6 +117,7 @@ void setup() {
     while((Spider_CheckConnected() != 0) || (Spider_CheckDHCP() != 0)) ;
     Serial.println(F("ok"));
 
+    /* Show IP information */
     tNetappIpconfigRetArgs inf;
     netapp_ipconfig(&inf);
 

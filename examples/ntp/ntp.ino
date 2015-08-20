@@ -52,7 +52,7 @@
 #include <string.h>
 
 #include "Spider_L3.h"
-
+#include "NTP.h"
 // GMT offset in program.
 #define MY_GMT              8
 
@@ -69,15 +69,8 @@ unsigned char WLAN_IRQ_INTNUM = 0;
 const int INDICATE_LED = 13;
 
 // Don't forget set correct WiFi SSID and Password.
-char AP_Ssid[] = {"WIFISSID"};
+char AP_Ssid[] = {"ABCDEFGH"};
 char AP_Pass[] = {"12345678"};
-
-long ntp_socket = 0xFFFFFFFF;
-sockaddr    host_addr;
-sockaddr    recv_addr;
-socklen_t   recv_addr_l;
-
-int Initial_get_time(void);
 
 void Initial_Spider(void) {          
     int ret = 0;
@@ -143,175 +136,15 @@ void Initial_Spider(void) {
 
 void setup() {
     Initial_Spider();
-    Initial_get_time();
+
+    // Set GMT +8 and ntp server address.
+    NTP_begin(MY_GMT, "time.stdtime.gov.tw");
 }
-
-int Initial_get_time(void){
-    char ntp_server[] = "time.stdtime.gov.tw";
-    unsigned int ntp_port = 123; 
-
-    int ret = -1;
-    long ntp_timeout = 0;
-
-    union {
-        unsigned long ulip;
-        unsigned char ucip[4];
-    }tar_ip;
-
-    union{
-        unsigned short  usport;
-        unsigned char   ucport[2];
-    }tar_port;
-
-    memset(&host_addr, 0, sizeof(sockaddr));
-
-    // Get ntp server's IP from host name.
-    ret = gethostbyname((char*)ntp_server, strlen(ntp_server), &(tar_ip.ulip));
-    if(ret < 0){
-        return -1;
-    }
-
-    // Get socket from spider L3.
-    ntp_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if(ntp_socket < 0){
-        ntp_socket = 0xFFFFFFFF;
-        return -2;
-    }
-
-    // Setting BSD socket timeout.
-    ntp_timeout = 1000;
-    ret = setsockopt(ntp_socket, SOL_SOCKET, SOCKOPT_RECV_TIMEOUT, &ntp_timeout, sizeof(ntp_timeout));
-    if(ret < 0){
-        closesocket(ntp_socket);
-        ntp_socket = 0xFFFFFFFF;
-        return -3;
-    }
-
-    // Setting BSD like socket setting.
-    host_addr.sa_family = AF_INET;
-    tar_port.usport = ntp_port;
-
-    host_addr.sa_data[0] = tar_port.ucport[1];
-    host_addr.sa_data[1] = tar_port.ucport[0];
-
-    host_addr.sa_data[2] = tar_ip.ucip[3];
-    host_addr.sa_data[3] = tar_ip.ucip[2];
-    host_addr.sa_data[4] = tar_ip.ucip[1];
-    host_addr.sa_data[5] = tar_ip.ucip[0];
-
-    return 0;
-}
-
-
-
-int get_time(unsigned int *year, unsigned char *month, unsigned int *day, unsigned char *hour, unsigned char *minute, unsigned char *second){
-
-    // Reference table and parameter.
-    unsigned char m_d_table_normal[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-    unsigned char m_d_table_leap[]   = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-
-    int           ret = -1;
-    unsigned char msg[48];
-    unsigned long timestamp_now = 0;
-    long          gmt_offset = 0;
-    unsigned long counter = 0;
-    
-    unsigned char *m_d_ptr = 0;
-
-    Serial.print("Starting get time...");
-    memset(msg, 0, sizeof(msg));
-
-    // NTP time stamp request header, version 3, mode : 3 as client
-    // Reference => http://tools.ietf.org/html/rfc2030
-    msg[0] = 0b00100011;
-    sendto(ntp_socket, msg, sizeof(msg), 0, &host_addr, sizeof(sockaddr));
-
-    memset(&recv_addr, 0, sizeof(sockaddr));
-    recv_addr_l = 0;
-    recvfrom(ntp_socket, msg, sizeof(msg), 0, &recv_addr, &recv_addr_l);
-
-    gmt_offset = (MY_GMT) * 60 * 60;
-    // Caculate timestamp rightnow
-    timestamp_now = ((unsigned long)msg[40] << 24) | ((unsigned long)msg[41] << 16) | ((unsigned long)msg[42] << 8) | ((unsigned long)msg[43]);
-    // Dec 70 years in second.
-    timestamp_now -= 2208988800UL;
-    timestamp_now += gmt_offset;
-
-    Serial.print("time stamp:");
-    Serial.println(timestamp_now, DEC);
-
-    /* counting reference : http://maumaubug.blogspot.tw/2013/05/sntp-ntp-02-epoch-time.html */
-
-    *second = timestamp_now % 60;
-
-    *minute = (timestamp_now / 60) % 60;
-
-    *hour =   (timestamp_now / 3600) % 24;
-
-    // Counting total days from 1970/01/01
-    counter =  (timestamp_now / 86400);
-
-    // Add 1 days.
-    counter += 1; 
-
-    // Count years.
-    *year = 1970;
-    while(counter > 365){
-        if(((*year % 4 == 0) && (*year % 100 != 0)) || (*year % 400 == 0)){
-            counter-= 366;
-        }
-        else{
-            counter -=365;
-        }
-        *year = *year + 1;
-    }
-
-    // Count month and days.
-    if(((*year % 4 == 0) && (*year % 100 != 0)) || (*year % 400 == 0)){
-        m_d_ptr = m_d_table_leap;
-    }
-    else{
-        m_d_ptr = m_d_table_normal;
-    }
-
-    *month = 0;
-    for(ret = 0; ret < 12; ret++){
-        *month = *month + 1;
-        if(counter > m_d_ptr[ret]){
-            counter -= m_d_ptr[ret];
-        }
-        else{
-            *day = counter;
-            break;
-        }
-    }
-
-    return ret;
-}
-
-
-void Find_Me(void){
-    /* Timer register */
-    static unsigned long tmr = 0;
-
-    /* Simple mdnsAdvisor function */
-    char mdns_msg[10];
-    memset(mdns_msg, 0, sizeof(mdns_msg));
-
-    if(millis() > tmr){
-        strncpy_P(mdns_msg, PSTR("NTP"), sizeof(mdns_msg));
-        mdnsAdvertiser(1, (char*)mdns_msg, strlen(mdns_msg));
-        tmr = millis() + 1000;
-    }
-}
-
-
-
-
 
 void loop() {
-    Find_Me();
+
     static unsigned long update_tmr = 0;
+
     if(millis() > update_tmr){
         unsigned int  n_year = 0;
         unsigned char n_month = 0;
@@ -320,7 +153,7 @@ void loop() {
         unsigned char n_minute = 0;
         unsigned char n_second = 0;
 
-        get_time(&n_year, &n_month, &n_day, &n_hour, &n_minute, &n_second);
+        NTP_get_time(&n_year, &n_month, &n_day, &n_hour, &n_minute, &n_second);
 
         Serial.print("Time :");
         Serial.print(n_year, DEC);

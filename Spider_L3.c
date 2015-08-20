@@ -151,22 +151,29 @@ char *SendBootloaderPatch(unsigned long *Length)
 -----------------------------------------------------------------------*/
 int Spider_begin(void){
 
-  // Initial Arduino hardware interface connect with CC3000.
-  CC3000_Init();
+    HW_Initialed = 0;
+    SmartConfigFinished = 0;
+    StopSmartConfig = 0;
+    SpiderConnected = 0;
+    SpiderDHCP = 0;
+    SpiderCanShutDown = 0;
+  
+    // Initial Arduino hardware interface connect with CC3000.
+    CC3000_Init();
 
-  // Initial callback functions to wlan api.
-  wlan_init( Spider_AsyncCallback, SendFirmwarePatch, SendDriverPatch, SendBootloaderPatch, 
-             ReadWlanInterruptPin, WlanInterruptEnable, WlanInterruptDisable, WriteWlanPin);
+    // Initial callback functions to wlan api.
+    wlan_init( Spider_AsyncCallback, SendFirmwarePatch, SendDriverPatch, SendBootloaderPatch, 
+               ReadWlanInterruptPin, WlanInterruptEnable, WlanInterruptDisable, WriteWlanPin);
 
-  // Starting CC3000
-  wlan_start(0);
+    // Starting CC3000
+    wlan_start(0);
 
-  // Set CC3000 event masking, right now without ping report.
-  wlan_set_event_mask(HCI_EVNT_WLAN_KEEPALIVE|HCI_EVNT_WLAN_UNSOL_INIT|HCI_EVNT_WLAN_ASYNC_PING_REPORT);
+    // Set CC3000 event masking, right now without ping report.
+    wlan_set_event_mask(HCI_EVNT_WLAN_KEEPALIVE|HCI_EVNT_WLAN_UNSOL_INIT|HCI_EVNT_WLAN_ASYNC_PING_REPORT);
 
-  //Initial success.
-  HW_Initialed = 1;
-  return 0;
+    //Initial success.
+    HW_Initialed = 1;
+    return 0;
 }
 /*------------------------------------------------------------------------
   Spider_close

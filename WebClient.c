@@ -257,13 +257,14 @@ int WebClient_DataAvailable(Host_Info *info){
     timeval timeout;
     fd_set fd_read;
 
-    memset(&fd_read, 0, sizeof(fd_read));
-    FD_SET(info->host_socket, &fd_read);
-
     timeout.tv_sec = 0;
     timeout.tv_usec = 5000; // 5 millisec
 
-    return select((info->host_socket+1), &fd_read, NULL, NULL, &timeout);
+    /* Check data available*/
+    FD_ZERO(&fd_read);
+    FD_SET(info->host_socket, &fd_read);
+    select((info->host_socket+1), &fd_read, NULL, NULL, &timeout);
+    return FD_ISSET(info->host_socket, &fd_read);
 }
 
 int WebClient_RecvData(Host_Info *info, char* ret_buf, int buf_size){
